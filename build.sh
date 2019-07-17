@@ -8,4 +8,5 @@ nix-shell ./shell-shake.nix \
   --run 'ghc --make Build.hs -rtsopts -threaded -with-rtsopts=-I0 -outputdir=_shake -o _shake/build'
 
 # Build project with `_shake/build`
-nix-shell ./shell.nix --run '_shake/build '"$@"''
+# nix-shell ./shell.nix --run '_shake/build '"$@"''
+_shake/build "$@"
