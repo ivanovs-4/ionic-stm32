@@ -21,7 +21,7 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
         cmd "sh ./run-in-shell.sh .styx/shell.nix cabal new-run blink-ion _build/main"
 
     "_build/main/main" %> \out -> do
-        need ["_build/main/main.c", "_build/main/main.h"]
+        need ["_build/main/main.c"]
         cs <- getDirectoryFiles "" ["//_build/main/*.c"]
         let os = [c -<.> "o" | c <- cs]
         need os

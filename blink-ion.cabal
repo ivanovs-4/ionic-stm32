@@ -18,7 +18,8 @@ extra-source-files:  ChangeLog.md
 
 executable blink-ion
   main-is:             Main.hs
-  -- other-modules:
+  other-modules:
+        BlinkIon
   -- other-extensions:
   build-depends:       base >=4.11
     , ion
