@@ -10,5 +10,6 @@ pkgs.stdenv.mkDerivation {
   name = "gcc-shell";
   buildInputs = [
     gcc-unwrapped
+    gcc-arm-embedded
   ];
 }
