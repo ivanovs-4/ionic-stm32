@@ -13,11 +13,10 @@ import qualified Data.Text.Lazy as TL
 import Text.Pretty.Simple
 
 import           Ivory.Compile.C.CmdlineFrontend
-
 import           Ivory.Language.Ion.Code
 
 
-import BlinkIon
+import Ionic
 
 
 data Ops = Ops {
@@ -27,13 +26,11 @@ data Ops = Ops {
 
 parseOps :: Parser Ops
 parseOps = do
-  targetDir <- argument str (
-                metavar "TARGET_DIR"
-             <> OA.help "Target dir" )
+  targetDir <- argument str $ metavar "TARGET_DIR"
   pure $ Ops{..}
 
 main :: IO ()
-main = join $ execParser $ info (opts <**> helper)
+main = join $ customExecParser (prefs showHelpOnError) $ info (opts <**> helper)
         ( fullDesc
        <> progDesc "Compile ion program and generate *.c files"
        <> header "Blink ion"
@@ -55,7 +52,3 @@ compileMain Ops{..} = do
                               , outDir = Just targetDir
                               }
   ionCompile ivoryOpts "main" simpleSchedule
-  -- ionCompile ivoryOpts "timer" exampleTimer
-  -- ionCompile ivoryOpts "exampleChain" exampleChain
-  -- ionCompile ivoryOpts "giant_ugly_test" test
-  pure ()

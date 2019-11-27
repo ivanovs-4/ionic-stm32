@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
+set -euo pipefail
 shell_file=${1}
 shift
-set -ex
+# set -x
 nix-shell ${shell_file} --run "$*"
