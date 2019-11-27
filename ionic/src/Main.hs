@@ -12,11 +12,12 @@ import Options.Applicative as OA
 import qualified Data.Text.Lazy as TL
 import Text.Pretty.Simple
 
-import           Ivory.Compile.C.CmdlineFrontend
-import           Ivory.Language.Ion.Code
+-- import           Ivory.Compile.C.CmdlineFrontend
+-- import           Ivory.Language.Ion.Code
 
 
-import Ionic
+-- import Ionic
+import IvoryMain
 
 
 data Ops = Ops {
@@ -47,8 +48,11 @@ main = join $ customExecParser (prefs showHelpOnError) $ info (opts <**> helper)
 
 compileMain :: Ops -> IO ()
 compileMain Ops{..} = do
-  let ivoryOpts = initialOpts { scErrors = False
-                              , srcLocs = True
-                              , outDir = Just targetDir
-                              }
-  ionCompile ivoryOpts "main" simpleSchedule
+
+  compileIvory targetDir
+
+  -- let ivoryOpts = initialOpts { scErrors = False
+  --                             , srcLocs = True
+  --                             , outDir = Just targetDir
+  --                             }
+  -- ionCompile ivoryOpts "main" simpleSchedule

@@ -5,7 +5,8 @@ import Development.Shake.Util
 
 main :: IO ()
 main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
-    want ["firmware"]
+    -- want ["firmware"]
+    want ["_build/csource/firmware"]
 
     phony "clean" $ do
         putNormal "Cleaning files in _build"
@@ -24,17 +25,21 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
         cmd (Cwd "ionic") "nix-shell ../ionic-shell.nix --run"
             ["cabal new-run -- ionic ../_build/csource"]
 
-    "firmware" %> \out -> do
+    -- "firmware" %> \out -> do
+    "_build/csource/firmware" %> \out -> do
         need ["csource"]
-        cs <- getDirectoryFiles "" ["//_build/csource/*.c"]
-        let os = [c -<.> "o" | c <- cs]
-        need os
-        () <- cmd "sh ./run-in-shell.sh ./gcc-shell.nix arm-none-eabi-gcc -o" ["_build" </> out] os
-        pure ()
+        copyFileChanged "csource/Makefile.src" "_build/csource/Makefile"
+        cmd (Cwd "_build/csource") "nix-shell ../../gcc-shell.nix --run" ["make"]
 
-    "_build/csource/*.o" %> \out -> do
-        let c = out -<.> "c"
-        let m = out -<.> "m"
-        () <- cmd "sh ./run-in-shell.sh ./gcc-shell.nix arm-none-eabi-gcc -c"
-              [c] "-o" [out] "-MMD -MF" [m]
-        needMakefileDependencies m
+--         cs <- getDirectoryFiles "" ["//_build/csource/*.c"]
+--         let os = [c -<.> "o" | c <- cs]
+--         need os
+--         () <- cmd "sh ./run-in-shell.sh ./gcc-shell.nix arm-none-eabi-gcc -o" ["_build" </> out] os
+--         pure ()
+
+--     "_build/csource/*.o" %> \out -> do
+--         let c = out -<.> "c"
+--         let m = out -<.> "m"
+--         () <- cmd "sh ./run-in-shell.sh ./gcc-shell.nix arm-none-eabi-gcc -c"
+--               [c] "-o" [out] "-MMD -MF" [m]
+--         needMakefileDependencies m

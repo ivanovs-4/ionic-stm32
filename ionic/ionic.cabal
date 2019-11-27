@@ -14,15 +14,31 @@ extra-source-files:  ChangeLog.md
 
 executable ionic
   main-is:             Main.hs
+  hs-source-dirs:      src
+  default-language:    Haskell2010
   other-modules:
         Ionic
-  -- other-extensions:
+      , Ivored.Inc.Core_CM3
+      , Ivored.Inc.STM32F10x
+      , Ivored.Inc.STM32F10x.GPIO
+      , Ivored.Inc.STM32F10x.RCC
+      , Ivored.Inc.System_STM32F10x
+      , Ivored.Main
+      , IvoryMain
   build-depends:       base >=4.11
     , ion
     , ivory
     , ivory-backend-c
+    , ivory-opts
+    , ivory-stdlib
     , optparse-applicative
     , pretty-simple
     , text
-  hs-source-dirs:      src
-  default-language:    Haskell2010
+  -- other-extensions:
+  default-extensions:
+    DataKinds
+    FlexibleInstances
+    OverloadedStrings
+    QuasiQuotes
+    RecursiveDo
+    TypeOperators
