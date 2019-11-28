@@ -1,6 +1,6 @@
 # name of executable
 
-ELF=firmware
+TARGET=firmware
 
 # Library path
 
@@ -8,8 +8,9 @@ LIBROOT=../../csource/STM32F10x_standard_libraries/STM32F10x_StdPeriph_Lib_V3.5.
 
 # Tools
 
-CC=arm-none-eabi-gcc
-LD=arm-none-eabi-gcc
+ARMGNU=arm-none-eabi
+CC=$(ARMGNU)-gcc
+LD=$(ARMGNU)-gcc
 
 # Code Paths
 
@@ -43,8 +44,16 @@ CFLAGS+= -I$(TEMPLATEROOT)/Library/ff9/src -I$(TEMPLATEROOT)/Library
 
 # Build executable
 
-$(ELF) : $(OBJS)
+$(TARGET).bin: $(TARGET).elf
+	$(ARMGNU)-objcopy -O binary $(TARGET).elf $(TARGET).bin
+
+$(TARGET).elf : $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
+
+.PHONY: burn
+
+burn: $(TARGET).bin
+	st-flash write $(TARGET).bin 0x8000000
 
 # compile and generate dependency info
 
