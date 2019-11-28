@@ -17,7 +17,7 @@ cmodule = package "main" $ do
   inclSym RCC._APB2Periph_GPIOC
   inclSym enable
   incl GPIO.structInit
-  -- defStruct (Proxy :: Proxy "GPIO_InitTypeDef")
+  defStruct (Proxy :: Proxy "GPIO_InitTypeDef_mock")
   incl GPIO.init
   inclSym GPIO.bit_SET
   inclSym GPIO.bit_RESET

@@ -76,20 +76,20 @@ type GPIOMode_TypeDef = Uint8
 --                                       This parameter can be a value of @ref GPIOSpeed_TypeDef */
 --   GPIOMode_TypeDef GPIO_Mode;    /*!< Specifies the operating mode for the selected pins.
 --                                       This parameter can be a value of @ref GPIOMode_TypeDef */
--- }GPIO_InitTypeDef;
+-- }GPIO_InitTypeDef_mock;
 
 
 -- type GPIO_Pin = Uint16
 
 [ivory|
-    struct GPIO_InitTypeDef
+    struct GPIO_InitTypeDef_mock
     {
       gpio_Pin :: Uint16
     ; gpio_Speed :: Uint8
     ; gpio_Mode :: Uint8
     }
 |]
--- initStruct = Proxy :: Proxy "GPIO_InitTypeDef"
+-- initStruct = Proxy :: Proxy "GPIO_InitTypeDef_mock"
 
 
 -- typedef enum
@@ -159,12 +159,12 @@ pin_All = ext "GPIO_Pin_All"
 -- void GPIO_DeInit(GPIO_TypeDef* GPIOx);
 -- void GPIO_AFIODeInit(void);
 
--- void GPIO_Init(GPIO_TypeDef* GPIOx, GPIO_InitTypeDef* GPIO_InitTypeDef);
-init :: Def ('[ Ref a ('Struct "GPIO_TypeDef"), Ref a ('Struct "GPIO_InitTypeDef")] ':-> ())
+-- void GPIO_Init(GPIO_TypeDef* GPIOx, GPIO_InitTypeDef_mock* GPIO_InitTypeDef_mock);
+init :: Def ('[ Ref a ('Struct "GPIO_TypeDef"), Ref a ('Struct "GPIO_InitTypeDef_mock")] ':-> ())
 init = imProc "GPIO_Init"
 
--- void GPIO_StructInit(GPIO_InitTypeDef* GPIO_InitTypeDef);
-structInit :: Def ('[ Ref a ('Struct "GPIO_InitTypeDef")] ':-> ())
+-- void GPIO_StructInit(GPIO_InitTypeDef_mock* GPIO_InitTypeDef_mock);
+structInit :: Def ('[ Ref a ('Struct "GPIO_InitTypeDef_mock")] ':-> ())
 structInit = imProc "GPIO_StructInit"
 
 -- uint8_t GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
