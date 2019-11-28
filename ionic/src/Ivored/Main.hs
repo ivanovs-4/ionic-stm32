@@ -34,6 +34,7 @@ cmodule = package "main" $ do
   --
   incl main'
   incl sysTick_Handler
+  incl ionicSchedule
   incl assert_failed
 
 main' :: Def ('[] ':-> ())
@@ -79,9 +80,13 @@ main' = proc "main" $ body $ do
 --         sysTickCount--;
 --     }
 -- }
+
+ionicSchedule :: Def ('[] ':-> ())
+ionicSchedule = importProc "ionicSchedule" "ionicSchedule.h"
+
 sysTick_Handler :: Def ('[] ':-> ())
 sysTick_Handler = proc "SysTick_Handler" $ body $ do
-  retVoid
+  call_ ionicSchedule
 
 
 -- #ifdef USE_FULL_ASSERT

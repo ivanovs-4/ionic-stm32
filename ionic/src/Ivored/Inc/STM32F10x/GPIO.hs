@@ -96,9 +96,9 @@ type GPIOMode_TypeDef = Uint8
 -- { Bit_RESET = 0,
 --   Bit_SET
 -- }BitAction;
-bit_SET, bit_RESET :: Uint8
-bit_SET = ext "Bit_SET"
-bit_RESET = ext "Bit_RESET"
+type BitAction = Uint8
+bit_RESET = ext "Bit_RESET" :: BitAction
+bit_SET   = ext "Bit_SET"   :: BitAction
 
 
 pin_0 :: Uint16
@@ -173,7 +173,11 @@ structInit = imProc "GPIO_StructInit"
 -- uint16_t GPIO_ReadOutputData(GPIO_TypeDef* GPIOx);
 -- void GPIO_SetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 -- void GPIO_ResetBits(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+
 -- void GPIO_WriteBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, BitAction BitVal);
+writeBit :: Def ('[ Ref a ('Struct "GPIO_TypeDef"), Uint16, BitAction] ':-> ())
+writeBit = imProc "GPIO_WriteBit"
+
 -- void GPIO_Write(GPIO_TypeDef* GPIOx, uint16_t PortVal);
 -- void GPIO_PinLockConfig(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 -- void GPIO_EventOutputConfig(uint8_t GPIO_PortSource, uint8_t GPIO_PinSource);

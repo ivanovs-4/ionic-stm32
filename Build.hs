@@ -21,8 +21,16 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
         liftIO $ removeFiles "_build/csource" ["//*"]
 
     phony "csource" $ do
-        cmd (Cwd "ionic") "nix-shell ../ionic-shell.nix --run"
+        need [csourceMain]
+
+    csourceMain %> \out -> do
+        alwaysRerun
+        cmd_ (Cwd "ionic") "nix-shell ../ionic-shell.nix --run"
             ["cabal new-run -- ionic ../_build/csource"]
+        -- Dirty hack to add import to generated `ionicSchedule.h`
+        -- Since `ion` seemingly does not allow it
+        cmd (Cwd "_build/csource") Shell
+            "sed -i -Ee 's/(#include \"ivory.h\")/\\1\\n#include \"main.h\"/' ./ionicSchedule.h"
 
     -- For this to work you have to create `udev` rules like in ./nix/stlink.nix
     -- For nixos users: add import of ./nix/stlink.nix to /etc/nixos/configuration.nix
@@ -31,8 +39,11 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
         need [firmware_bin]
         cmd (Cwd "_build/csource") "nix-shell ../../stlink-shell.nix --run" ["make burn"]
 
+    phony "firmware" $ do
+        need [firmware_bin]
+
     firmware_bin %> \out -> do
-        need ["csource"]
+        need [csourceMain]
         copyFileChanged "csource/Makefile.src" "_build/csource/Makefile"
         cmd (Cwd "_build/csource") "nix-shell ../../gcc-shell.nix --run" ["make"]
 
@@ -51,3 +62,4 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
 
   where
     firmware_bin = "_build/csource/firmware.bin"
+    csourceMain = "_build/csource/main.c"

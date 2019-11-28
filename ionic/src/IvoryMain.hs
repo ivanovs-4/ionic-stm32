@@ -20,8 +20,8 @@ import Ivory.Stdlib.String
 import qualified Ivored.Main as Main
 
 
-compileIvory :: FilePath -> IO ()
-compileIvory dirpath = do
+compileIvoryMain :: FilePath -> IO ()
+compileIvoryMain dirpath = do
   let opts = initialOpts { outDir = Just dirpath, srcLocs = True }
   runCompiler modules stdlibStringArtifacts opts
 
