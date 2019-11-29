@@ -46,5 +46,5 @@ main = join $ customExecParser (prefs showHelpOnError) $ info (opts <**> helper)
 compileMain :: Ops -> IO ()
 compileMain Ops{..} = do
 
-  compileIvoryMain targetDir
   compileIonicSchedule targetDir
+  compileIvoryMain targetDir

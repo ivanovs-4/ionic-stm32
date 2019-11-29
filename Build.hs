@@ -7,7 +7,7 @@ import Development.Shake.FilePath
 import Development.Shake.Util
 
 main :: IO ()
-main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
+main = shakeArgs shakeOptions{shakeFiles="_shake/.shake"} $ do
     want [firmware_bin]
 
     phony "clean" $ do
@@ -17,26 +17,24 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
           , "*/.ghc.environment.*"
           , "*/dist-newstyle"
           , "*/dist"
-          , native <> "//*.o"
-          , native <> "//*.m"
+          , csource <> "//*.o"
+          , csource <> "//*.m"
           ]
         removeFilesAfter "_build" ["//*"]
 
-    phony "csource-clean" $ do
-        liftIO $ removeFiles "_build/csource" ["//*"]
+    phony "mainc" $ do
+        need [mainc]
 
-    phony "csource" $ do
-        need [csourceMain]
-
-    csourceMain %> \out -> do
-        alwaysRerun
+    mainc %> \out -> do
+        hsfiles <- getDirectoryFiles "" [ "ionic//*.hs", "ionic/*.cabal" ]
+        need hsfiles
         cmd_ (Cwd "ionic") "nix-shell ../ionic-shell.nix --run"
             ["cabal -O0 new-build ionic"]
         cmd_ (Cwd "ionic") "nix-shell ../ionic-shell.nix --run"
-            ["cabal -O0 new-run -- ionic ../_build/csource"]
+            ["cabal -O0 new-run -- ionic ../_build"]
         -- Dirty hack to add import to generated `ionicSchedule.h`
         -- Since `ion` seemingly does not allow it
-        cmd (Cwd "_build/csource") Shell
+        cmd (Cwd "_build") Shell
             "sed -i -Ee 's/(#include \"ivory.h\")/\\1\\n#include \"main.h\"/' ionicSchedule.h"
 
     -- For this to work you have to create `udev` rules like in ./nix/stlink.nix
@@ -47,26 +45,23 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
         cmd "nix-shell ./stlink-shell.nix --run"
           [ "st-flash write " <> firmware_bin <> " 0x8000000" ]
 
-    phony "firmware" $ do
-        need [firmware_bin]
-
     firmware_bin %> \out_bin -> do
-        need [csourceMain]
+        need [mainc]
         let out_elf = out_bin -<.> "elf"
 
-        native_cs <- fmap mconcat . sequence $ [
+        csource_cs <- fmap mconcat . sequence $ [
               getDirectoryFiles "" [
-                native </> "*.c"  -- here is only startup_stm32f10x.c
+                csource </> "*.c"  -- here is only startup_stm32f10x.c
                 -- # Search path for perpheral library
               , core <> "//*.c"
               , device <> "//*.c"
               ]
             , getDirectoryFiles "" $ ((periph </> "src") </>) <$> periphCsUsed
             ]
-        let native_os = native_cs <&> (\c -> "_build/csource/native" </> c -<.> "o")
+        let native_os = csource_cs <&> (\c -> "_build/native" </> dropDirSteps 1 c -<.> "o")
         need native_os
 
-        generated_cs <- getDirectoryFiles "" [ "_build/csource/*.c" ]
+        generated_cs <- getDirectoryFiles "" [ "_build/*.c" ]
         let generated_os = generated_cs <&> (-<.> "o")
         need generated_os
 
@@ -82,11 +77,11 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
             "arm-none-eabi-objcopy -O binary"
             [ out_elf, out_bin ]
 
-    "_build/csource/native//*.o" %> \out -> mkObj
-        ((joinPath . drop 3 . splitPath $ out) -<.> "c") out []
+    "_build/native//*.o" %> \out -> mkObj
+        ("csource" </> dropDirSteps 2 out -<.> "c") out []
 
-    "_build/csource/*.o" %> \out -> mkObj (out -<.> "c") out [
-              "-I" <> "_build/csource"
+    "_build/*.o" %> \out -> mkObj (out -<.> "c") out [
+              "-I" <> "_build"
             -- , "-D" <> "USE_FULL_ASSERT"
             ]
 
@@ -97,7 +92,7 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
             "-c" [c] "-o" [out] "-MMD -MF" [m]
             ([ "-mcpu=cortex-m3", "-mthumb", "-nostdlib"
             , "-Os"
-            , "-I" <> native
+            , "-I" <> csource
             , "-I" <> core
             , "-I" <> device
             , "-I" <> periph </> "inc"
@@ -106,12 +101,14 @@ main = shakeArgs shakeOptions{shakeFiles="_build"} $ do
             ] <> flags)
         needMakefileDependencies m
 
-    firmware_bin = "_build/csource/firmware.bin"
-    csourceMain = "_build/csource/main.c"
+    dropDirSteps n = joinPath . drop n . splitPath
 
-    native = "csource"
-    ldscript = native </> "stm32f100.ld"
-    libroot = native </> "STM32F10x_standard_libraries/STM32F10x_StdPeriph_Lib_V3.5.0"
+    firmware_bin = "_build/firmware.bin"
+    mainc = "_build/main.c"
+
+    csource = "csource"
+    ldscript = csource </> "stm32f100.ld"
+    libroot = csource </> "STM32F10x_standard_libraries/STM32F10x_StdPeriph_Lib_V3.5.0"
     core = libroot </> "Libraries/CMSIS/CM3/CoreSupport"
     device = libroot </> "Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x"
     periph = libroot </> "Libraries/STM32F10x_StdPeriph_Driver"
