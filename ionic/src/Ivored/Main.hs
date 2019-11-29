@@ -35,7 +35,7 @@ cmodule = package "main" $ do
   incl main'
   incl sysTick_Handler
   incl ionicSchedule
-  incl assert_failed
+  -- incl assert_failed
 
 main' :: Def ('[] ':-> ())
 main' = proc "main" $ body $ do
