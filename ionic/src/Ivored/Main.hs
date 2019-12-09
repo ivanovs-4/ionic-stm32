@@ -37,8 +37,13 @@ cmodule = package "main" $ do
   incl ionicSchedule
   -- incl assert_failed
 
+  incl usb_ionic_prepare
+  incl handle_usb_loop
+
 main' :: Def ('[] ':-> ())
 main' = proc "main" $ body $ do
+  call_ usb_ionic_prepare
+
   -- enable clock for GPIO ports
   call_ RCC._APB2PeriphClockCmd (
          RCC._APB2Periph_GPIOB
@@ -49,37 +54,21 @@ main' = proc "main" $ body $ do
   s <- local (istruct [])
   call_ GPIO.structInit s
   gpioInit s gpioC GPIO.pin_13 GPIO.mode_Out_PP GPIO.speed_2MHz
-  gpioInit s gpioB GPIO.pin_9 GPIO.mode_IN_FLOATING GPIO.speed_10MHz
-
+  -- gpioInit s gpioB GPIO.pin_9 GPIO.mode_IN_FLOATING GPIO.speed_10MHz
 
   -- set up a timer
   call_ sysTick_Config (systemCoreClock ./ 500)
 
-  -- while (1)
-  -- {
-  --     GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
-  --     myDelay(144);
-  --     GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
-  --     myDelay(233);
-  -- }
+  call_ handle_usb_loop
 
   retVoid
 
 
--- static volatile __IO uint32_t sysTickCount = 0;
+handle_usb_loop :: Def ('[] ':-> ())
+handle_usb_loop = importProc "handle_usb_loop" "usb_main.h"
 
--- void myDelay(uint32_t nTime)
--- {
---     sysTickCount = nTime;
---     while(sysTickCount != 0);
--- }
-
--- void SysTick_Handler(void)
--- {
---     if (sysTickCount != 0) {
---         sysTickCount--;
---     }
--- }
+usb_ionic_prepare :: Def ('[] ':-> ())
+usb_ionic_prepare = importProc "usb_ionic_prepare" "usb_main.h"
 
 ionicSchedule :: Def ('[] ':-> ())
 ionicSchedule = importProc "ionicSchedule" "ionicSchedule.h"

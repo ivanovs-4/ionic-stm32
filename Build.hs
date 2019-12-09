@@ -21,6 +21,7 @@ main = shakeArgs shakeOptions{shakeFiles="_shake/.shake"} $ do
           , csource <> "//*.m"
           ]
         removeFilesAfter "_build" ["//*"]
+        -- removeFilesAfter "_shake/.shake" ["//*"]
 
     phony "mainc" $ do
         need [mainc]
@@ -53,8 +54,10 @@ main = shakeArgs shakeOptions{shakeFiles="_shake/.shake"} $ do
               getDirectoryFiles "" [
                 csource </> "*.c"  -- here is only startup_stm32f10x.c
                 -- # Search path for perpheral library
-              , core <> "//*.c"
-              , device <> "//*.c"
+              , cmsis </> "Source" <> "//*.c"
+              , device </> "Source" <> "//*.c"
+              , usb_fs </> "src" <> "//*.c"
+              , csource </> "usb" <> "//*.c"
               ]
             , getDirectoryFiles "" $ ((periph </> "src") </>) <$> periphCsUsed
             ]
@@ -93,10 +96,12 @@ main = shakeArgs shakeOptions{shakeFiles="_shake/.shake"} $ do
             ([ "-mcpu=cortex-m3", "-mthumb", "-nostdlib"
             , "-Os"
             , "-I" <> csource
-            , "-I" <> core
-            , "-I" <> device
+            , "-I" <> cmsis </> "Include"
+            , "-I" <> device </> "Include"
             , "-I" <> periph </> "inc"
-            , "-D" <> "STM32F10X_MD_VL"
+            , "-I" <> usb_fs </> "inc"
+            , "-I" <> csource </> "usb"
+            , "-D" <> "STM32F10X_MD"
             , "-D" <> "USE_STDPERIPH_DRIVER"
             ] <> flags)
         needMakefileDependencies m
@@ -108,11 +113,14 @@ main = shakeArgs shakeOptions{shakeFiles="_shake/.shake"} $ do
 
     csource = "csource"
     ldscript = csource </> "stm32f100.ld"
-    libroot = csource </> "STM32F10x_standard_libraries/STM32F10x_StdPeriph_Lib_V3.5.0"
-    core = libroot </> "Libraries/CMSIS/CM3/CoreSupport"
-    device = libroot </> "Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x"
-    periph = libroot </> "Libraries/STM32F10x_StdPeriph_Driver"
+    libroot = csource </> "Libraries"
+    cmsis = libroot </> "CMSIS"
+    device = libroot </> "CMSIS/Device/ST/STM32F10x"
+    periph = libroot </> "STM32F10x_StdPeriph_Driver"
+    usb_fs = libroot </> "STM32_USB-FS-Device_Driver"
     periphCsUsed = [
         "stm32f10x_gpio.c"
       , "stm32f10x_rcc.c"
+      , "misc.c"
+      , "stm32f10x_exti.c"
       ]
