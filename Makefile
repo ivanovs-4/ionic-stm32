@@ -1,7 +1,7 @@
 .PHONY: all
 
 all:
-	./make
+	./Build.hs
 
 %:
-	./make $@
+	./Build.hs $@

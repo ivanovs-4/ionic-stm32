@@ -1,3 +1,6 @@
+#!/usr/bin/env nix-shell
+#!nix-shell ./shell-shake.nix -i runghc
+
 {-# LANGUAGE FlexibleContexts    #-}
 
 import Data.Functor
@@ -7,7 +10,7 @@ import Development.Shake.FilePath
 import Development.Shake.Util
 
 main :: IO ()
-main = shakeArgs shakeOptions{shakeFiles="_shake/.shake"} $ do
+main = shakeArgs shakeOptions $ do
     want [firmware_bin]
 
     phony "clean" $ do
