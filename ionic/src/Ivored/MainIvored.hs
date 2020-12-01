@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Ivored.Main where
+module Ivored.MainIvored where
 
 import Ivory.Language
 import Ivory.Compile.C.CmdlineFrontend

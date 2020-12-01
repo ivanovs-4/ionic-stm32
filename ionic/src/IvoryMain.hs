@@ -17,7 +17,7 @@ import Ivory.Language (Module())
 import Ivory.Stdlib (stdlibModules)
 import Ivory.Stdlib.String
 
-import qualified Ivored.Main as Main
+import qualified Ivored.MainIvored as MainIvored
 
 
 compileIvoryMain :: FilePath -> IO ()
@@ -26,6 +26,6 @@ compileIvoryMain dirpath = do
   runCompiler modules stdlibStringArtifacts opts
 
 modules :: [Module]
-modules = [ Main.cmodule
+modules = [ MainIvored.cmodule
           ]
           <> stdlibModules

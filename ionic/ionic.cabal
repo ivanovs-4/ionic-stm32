@@ -23,7 +23,7 @@ executable ionic
       , Ivored.Inc.STM32F10x.GPIO
       , Ivored.Inc.STM32F10x.RCC
       , Ivored.Inc.System_STM32F10x
-      , Ivored.Main
+      , Ivored.MainIvored
       , IvoryMain
   build-depends:       base >=4.11
     , ion
