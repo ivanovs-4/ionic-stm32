@@ -38,7 +38,7 @@ spec = do
   -- pass the current ctemp as an argument.
     -- trigger "blinkon"  (ctemp < 18.0) [arg ctemp]
     -- trigger "blinkoff" (ctemp > 21.0) [arg ctemp]
-    -- trigger "blinkon"  (ctemp < 18.0) []
-    trigger "blinkon"  (constant True) []
+    trigger "blinkon"  (ctemp < 18.0) []
     trigger "blinkoff" (ctemp > 21.0) []
+    -- trigger "blinkon"  (constant True) []
     -- trigger "blinkoff"  (constant True) []

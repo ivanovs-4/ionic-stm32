@@ -7,9 +7,9 @@ import Ivory.Compile.C.CmdlineFrontend
 
 import qualified Ivored.Inc.STM32F10x.GPIO as GPIO
 import qualified Ivored.Inc.STM32F10x.RCC as RCC
+
 import Ivored.Inc.STM32F10x
 import Pilot
-
 
 cmodule :: Module
 cmodule = package "main" $ do
