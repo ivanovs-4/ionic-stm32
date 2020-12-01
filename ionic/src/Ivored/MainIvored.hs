@@ -41,7 +41,7 @@ cmodule = package "main" $ do
   incl pilotStep
   incl blinkOn
   incl blinkOff
-  -- inclSym pilotTemperature
+  defMemArea pilotTemperature
   --
 
   -- incl assert_failed
@@ -84,9 +84,6 @@ ionicSchedule = importProc "ionicSchedule" "ionicSchedule.h"
 
 pilotStep :: Def ('[] ':-> ())
 pilotStep = importProc "step" "pilot.h"
-
--- pilotTemperature :: Def Uint8
--- pilotTemperature = undefined
 
 sysTick_Handler :: Def ('[] ':-> ())
 sysTick_Handler = proc "SysTick_Handler" $ body $ do
@@ -131,6 +128,8 @@ gpioInit s reg pin mode speed = do
   call_ GPIO.init reg s
 
 
+pilotTemperature :: MemArea ('Stored Uint8)
+pilotTemperature = area "temperature" $ Just $ ival 0
 
 blinkOn :: Def ('[] ':-> ())
 blinkOn = proc "blinkon" $ body $ do

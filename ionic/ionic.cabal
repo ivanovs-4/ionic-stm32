@@ -45,4 +45,5 @@ executable ionic
     OverloadedStrings
     QuasiQuotes
     RecursiveDo
+    TypeApplications
     TypeOperators
