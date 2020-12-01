@@ -15,6 +15,7 @@ import Text.Pretty.Simple
 
 import Ionic
 import IvoryMain
+import Pilot
 
 
 data Ops = Ops {
@@ -47,4 +48,5 @@ compileMain :: Ops -> IO ()
 compileMain Ops{..} = do
 
   compileIonicSchedule targetDir
+  compileCopiloted targetDir
   compileIvoryMain targetDir

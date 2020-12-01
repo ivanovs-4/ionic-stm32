@@ -11,7 +11,6 @@ module Ionic where
 
 import Control.Monad
 import Data.Word
-
 import Ivory.Compile.C.CmdlineFrontend
 import Ivory.Language
 import Ivory.Language.Ion.Base
@@ -19,9 +18,12 @@ import Ivory.Language.Ion.Code
 import Ivory.Language.Ion.Operators
 
 import Ivored.Inc.STM32F10x
+import Ivored.MainIvored (pilotStep)
+
 import qualified Ivored.Inc.STM32F10x.GPIO as GPIO
 
 
+compileIonicSchedule :: String -> IO ()
 compileIonicSchedule targetDir = do
   let ivoryOpts = initialOpts { scErrors = False
                               , srcLocs = True
@@ -31,13 +33,21 @@ compileIonicSchedule targetDir = do
 
 ionSchedule :: Ion ()
 ionSchedule = ion "schedule" $ do
-  let p = 377
   period p $ do
 
-    phase 0 $ ivoryEff $ do
-      comment "GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);"
-      call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_RESET
+      phase 0 $ ivoryEff $ do
+          -- comment "GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);"
+          call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_RESET
 
-    phase (round $ fromIntegral p / 1.618) $ ivoryEff $ do
-      comment "GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);"
-      call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET
+      phase (round $ fromIntegral p / 1.618) $ ivoryEff $ do
+          -- comment "GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);"
+          call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET
+
+  period (111) $ do
+      phase 1 $ ivoryEff $ do
+          comment "Pilot step"
+          call_ pilotStep
+
+  where
+      p = 377
+

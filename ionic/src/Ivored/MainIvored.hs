@@ -8,6 +8,7 @@ import Ivory.Compile.C.CmdlineFrontend
 import qualified Ivored.Inc.STM32F10x.GPIO as GPIO
 import qualified Ivored.Inc.STM32F10x.RCC as RCC
 import Ivored.Inc.STM32F10x
+import Pilot
 
 
 cmodule :: Module
@@ -27,6 +28,7 @@ cmodule = package "main" $ do
   inclSym GPIO.mode_IN_FLOATING
   inclSym GPIO.speed_10MHz
   inclSym GPIO.speed_2MHz
+  incl GPIO.writeBit
   inclSym gpioB
   inclSym gpioC
   incl sysTick_Config
@@ -35,6 +37,13 @@ cmodule = package "main" $ do
   incl main'
   incl sysTick_Handler
   incl ionicSchedule
+
+  incl pilotStep
+  incl blinkOn
+  incl blinkOff
+  -- inclSym pilotTemperature
+  --
+
   -- incl assert_failed
 
   incl usb_ionic_prepare
@@ -72,6 +81,12 @@ usb_ionic_prepare = importProc "usb_ionic_prepare" "usb_main.h"
 
 ionicSchedule :: Def ('[] ':-> ())
 ionicSchedule = importProc "ionicSchedule" "ionicSchedule.h"
+
+pilotStep :: Def ('[] ':-> ())
+pilotStep = importProc "step" "pilot.h"
+
+-- pilotTemperature :: Def Uint8
+-- pilotTemperature = undefined
 
 sysTick_Handler :: Def ('[] ':-> ())
 sysTick_Handler = proc "SysTick_Handler" $ body $ do
@@ -114,3 +129,13 @@ gpioInit s reg pin mode speed = do
   store (s ~> GPIO.gpio_Mode) mode
   store (s ~> GPIO.gpio_Speed) speed
   call_ GPIO.init reg s
+
+
+
+blinkOn :: Def ('[] ':-> ())
+blinkOn = proc "blinkon" $ body $ do
+    call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_RESET
+
+blinkOff :: Def ('[] ':-> ())
+blinkOff = proc "blinkoff" $ body $ do
+    call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET

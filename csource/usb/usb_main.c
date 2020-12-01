@@ -8,21 +8,21 @@ __IO uint8_t PrevXferComplete = 1;
 
 extern uint8_t key_buf[9];
 
-void MOUSE_move(int8_t x, int8_t y)
-{
-    /*
-     * buf[0]: 1 - report ID
-     * buf[1]: bit2 - middle button, bit1 - right, bit0 - left
-     * buf[2]: move X
-     * buf[3]: move Y
-     * buf[4]: wheel
-     */
-    uint8_t buf[5] = {1,0,0,0,0};
-    buf[2] = x; buf[3] = y;
-    USB_SIL_Write(EP1_IN, buf, 5);
-    PrevXferComplete = 0;
-    SetEPTxValid(ENDP1);
-}
+// void MOUSE_move(int8_t x, int8_t y)
+// {
+//     /*
+//      * buf[0]: 1 - report ID
+//      * buf[1]: bit2 - middle button, bit1 - right, bit0 - left
+//      * buf[2]: move X
+//      * buf[3]: move Y
+//      * buf[4]: wheel
+//      */
+//     uint8_t buf[5] = {1,0,0,0,0};
+//     buf[2] = x; buf[3] = y;
+//     USB_SIL_Write(EP1_IN, buf, 5);
+//     PrevXferComplete = 0;
+//     SetEPTxValid(ENDP1);
+// }
 
 void KEYBOARD_SEND_key_buf(void)
 {

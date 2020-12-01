@@ -25,7 +25,11 @@ executable ionic
       , Ivored.Inc.System_STM32F10x
       , Ivored.MainIvored
       , IvoryMain
+      , Pilot
   build-depends:       base >=4.11
+    , copilot
+    , copilot-c99
+    , directory
     , ion
     , ivory
     , ivory-backend-c
