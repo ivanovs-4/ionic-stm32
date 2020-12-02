@@ -16,9 +16,9 @@ import Text.Pretty.Simple
 
 import qualified Data.Text.Lazy as TL
 
-import Ionic
 import Ivored.MainIvored
 import Pilot
+import Schedule
 
 
 data Ops = Ops {

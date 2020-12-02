@@ -9,9 +9,9 @@ import Ivory.Language
 import qualified Ivored.Inc.STM32F10x.GPIO as GPIO
 import qualified Ivored.Inc.STM32F10x.RCC as RCC
 
-import Ionic
 import Ivored.Inc.STM32F10x
 import Pilot
+import Schedule
 
 cmodule :: ScheduleParams -> Module
 cmodule ScheduleParams {..} = package "main" $ do

@@ -1,13 +1,4 @@
-{- |
-Description: Source code of STM32 firmware
--}
-
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE TypeOperators #-}
-
-module Ionic where
+module Schedule where
 
 import Control.Monad
 import Data.Word
