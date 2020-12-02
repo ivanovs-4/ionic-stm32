@@ -3,7 +3,6 @@
 module Ivored.MainIvored where
 
 import Data.Function
-import Ivory.Compile.C.CmdlineFrontend
 import Ivory.Language
 
 import qualified Ivored.Inc.STM32F10x.GPIO as GPIO
@@ -130,23 +129,14 @@ gpioInit s reg pin mode speed = do
   call_ GPIO.init reg s
 
 
-blinkOn :: Def ('[] ':-> ())
-blinkOn = proc "blinkon" $ body $ do
-    call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_RESET
-
-blinkOff :: Def ('[] ':-> ())
-blinkOff = proc "blinkoff" $ body $ do
-    call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET
-
-
 scheduleParams :: ScheduleParams
 scheduleParams = pilotInfo & \PilotInfo {..} -> do
   let
-    -- pilotStep :: Def ('[] ':-> ())
-    sched_pilotStep = importProc "step" (pilotInfo_fileName <> ".h")
-    -- sched_pilotTemperature :: MemArea ('Stored Uint8)
-    sched_pilotTemperature = area (pp_temperature pilotInfo_params) $ Just $ ival 0
     sched_name             = "ionic_schedule"
+    sched_pilotStep        = importProc "step" (pilotInfo_fileName <> ".h")
+    sched_pilotTemperature = area (pp_temperature pilotInfo_params) $ Just $ ival 0
+    sched_blinkOn          = blinkOnA
+    sched_blinkOff         = blinkOffA
   ScheduleParams {..}
 
 pilotInfo :: PilotInfo
@@ -155,8 +145,25 @@ pilotInfo = PilotInfo
         { pp_temperature = "temperature"
         }
     , pilotInfo_actions = PilotActions
-        { pa_blinkOn  = "blinkon"
-        , pa_blinkOff = "blinkoff"
+        { pa_blinkOn  = blinkOn'
+        , pa_blinkOff = blinkOff'
         }
     , pilotInfo_fileName = "pilot"
     }
+
+blinkOn' = "blinkon"
+blinkOff' = "blinkoff"
+
+blinkOn :: Def ('[] ':-> ())
+blinkOn = proc blinkOn' $ body $ blinkOnA
+
+-- blinkOnA :: IvoryAction ()
+blinkOnA = do
+    call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_RESET
+
+blinkOff :: Def ('[] ':-> ())
+blinkOff = proc blinkOff' $ body $ blinkOffA
+
+-- blinkOffA :: IvoryAction ()
+blinkOffA = do
+    call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET

@@ -8,7 +8,7 @@ import GHC.IO.Handle
 import GHC.IO.Handle.FD
 import Ivory.Compile.C.CmdlineFrontend
 import Ivory.Language
-import Ivory.Language
+import Ivory.Language.Ion.Code
 import Ivory.Stdlib (stdlibModules)
 import Ivory.Stdlib.String
 import Options.Applicative as OA
@@ -55,12 +55,20 @@ compileMain Ops{..} = do
 
   where
 
+    compileIonicSchedule :: ScheduleParams -> String -> IO ()
+    compileIonicSchedule sp targetDir = do
+        let ivoryOpts = initialOpts { scErrors = False
+                                    , srcLocs = True
+                                    , outDir = Just targetDir
+                                    }
+        ionCompile ivoryOpts (sched_name sp) (ionSchedule sp)
+
     compileIvoryMain :: ScheduleParams -> FilePath -> IO ()
     compileIvoryMain sp dirpath = do
-      let opts = initialOpts { outDir = Just dirpath, srcLocs = True }
-      runCompiler (modules sp) stdlibStringArtifacts opts
+        let opts = initialOpts { outDir = Just dirpath, srcLocs = True }
+        runCompiler (modules sp) stdlibStringArtifacts opts
 
     modules :: ScheduleParams -> [Module]
-    modules sp = [ cmodule sp
-              ]
+    modules sp = mempty
+              <> [ cmodule sp ]
               <> stdlibModules
