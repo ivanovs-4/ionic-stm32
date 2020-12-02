@@ -2,17 +2,19 @@
 
 module Ivored.MainIvored where
 
-import Ivory.Language
+import Data.Function
 import Ivory.Compile.C.CmdlineFrontend
+import Ivory.Language
 
 import qualified Ivored.Inc.STM32F10x.GPIO as GPIO
 import qualified Ivored.Inc.STM32F10x.RCC as RCC
 
+import Ionic
 import Ivored.Inc.STM32F10x
 import Pilot
 
-cmodule :: Module
-cmodule = package "main" $ do
+cmodule :: ScheduleParams -> Module
+cmodule ScheduleParams {..} = package "main" $ do
   incl RCC._APB2PeriphClockCmd
   inclSym RCC._APB2Periph_GPIOB
   inclSym RCC._APB2Periph_GPIOC
@@ -37,17 +39,27 @@ cmodule = package "main" $ do
   incl main'
   incl sysTick_Handler
   incl ionicSchedule
+  incl sched_pilotStep
 
-  incl pilotStep
   incl blinkOn
   incl blinkOff
-  defMemArea pilotTemperature
+  defMemArea sched_pilotTemperature
   --
 
   -- incl assert_failed
 
   incl usb_ionic_prepare
   incl handle_usb_loop
+
+  where
+      ionicSchedule :: Def ('[] ':-> ())
+      ionicSchedule = importProc sched_name (sched_name <> ".h")
+
+      sysTick_Handler :: Def ('[] ':-> ())
+      sysTick_Handler = proc "SysTick_Handler" $ body $ do
+          call_ ionicSchedule
+
+
 
 main' :: Def ('[] ':-> ())
 main' = proc "main" $ body $ do
@@ -78,16 +90,6 @@ handle_usb_loop = importProc "handle_usb_loop" "usb_main.h"
 
 usb_ionic_prepare :: Def ('[] ':-> ())
 usb_ionic_prepare = importProc "usb_ionic_prepare" "usb_main.h"
-
-ionicSchedule :: Def ('[] ':-> ())
-ionicSchedule = importProc "ionicSchedule" "ionicSchedule.h"
-
-pilotStep :: Def ('[] ':-> ())
-pilotStep = importProc "step" "pilot.h"
-
-sysTick_Handler :: Def ('[] ':-> ())
-sysTick_Handler = proc "SysTick_Handler" $ body $ do
-  call_ ionicSchedule
 
 {-
   -- Строка установлена в предыдущем периоде и уже выполнено несколько измерений.
@@ -128,9 +130,6 @@ gpioInit s reg pin mode speed = do
   call_ GPIO.init reg s
 
 
-pilotTemperature :: MemArea ('Stored Uint8)
-pilotTemperature = area "temperature" $ Just $ ival 0
-
 blinkOn :: Def ('[] ':-> ())
 blinkOn = proc "blinkon" $ body $ do
     call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_RESET
@@ -138,3 +137,26 @@ blinkOn = proc "blinkon" $ body $ do
 blinkOff :: Def ('[] ':-> ())
 blinkOff = proc "blinkoff" $ body $ do
     call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET
+
+
+scheduleParams :: ScheduleParams
+scheduleParams = pilotInfo & \PilotInfo {..} -> do
+  let
+    -- pilotStep :: Def ('[] ':-> ())
+    sched_pilotStep = importProc "step" (pilotInfo_fileName <> ".h")
+    -- sched_pilotTemperature :: MemArea ('Stored Uint8)
+    sched_pilotTemperature = area (pp_temperature pilotInfo_params) $ Just $ ival 0
+    sched_name             = "ionic_schedule"
+  ScheduleParams {..}
+
+pilotInfo :: PilotInfo
+pilotInfo = PilotInfo
+    { pilotInfo_params  = PilotParams
+        { pp_temperature = "temperature"
+        }
+    , pilotInfo_actions = PilotActions
+        { pa_blinkOn  = "blinkon"
+        , pa_blinkOff = "blinkoff"
+        }
+    , pilotInfo_fileName = "pilot"
+    }

@@ -36,10 +36,10 @@ main = shakeArgs shakeOptions $ do
             ["cabal -O0 new-build ionic"]
         cmd_ (Cwd "ionic") "nix-shell ../ionic-shell.nix --run"
             ["cabal -O0 new-run -- ionic ../_build"]
-        -- Dirty hack to add import to generated `ionicSchedule.h`
+        -- Dirty hack to add import to generated `ionic_schedule.h`
         -- Since `ion` seemingly does not allow it
         cmd (Cwd "_build") Shell
-            "sed -i -Ee 's/(#include \"ivory.h\")/\\1\\n#include \"main.h\"/' ionicSchedule.h"
+            "sed -i -Ee 's/(#include \"ivory.h\")/\\1\\n#include \"main.h\"/' ionic_schedule.h"
 
     -- For this to work you have to create `udev` rules like in ./nix/stlink.nix
     -- For nixos users: add import of ./nix/stlink.nix to /etc/nixos/configuration.nix

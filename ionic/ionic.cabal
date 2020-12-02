@@ -25,7 +25,6 @@ executable ionic
       , Ivored.Inc.STM32F10x.RCC
       , Ivored.Inc.System_STM32F10x
       , Ivored.MainIvored
-      , IvoryMain
       , Pilot
   build-depends:       base >=4.11
     , copilot
@@ -46,6 +45,7 @@ executable ionic
     LambdaCase
     OverloadedStrings
     QuasiQuotes
+    RecordWildCards
     RecursiveDo
     TypeApplications
     TypeOperators

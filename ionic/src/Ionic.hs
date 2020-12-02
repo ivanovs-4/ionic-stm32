@@ -20,20 +20,30 @@ import Ivory.Language.Ion.Operators
 import Ivored.Helpers
 import Ivored.Inc.STM32F10x
 
-import qualified Ivored.MainIvored as Iv
 import qualified Ivored.Inc.STM32F10x.GPIO as GPIO
 
 
-compileIonicSchedule :: String -> IO ()
-compileIonicSchedule targetDir = do
+compileIonicSchedule :: ScheduleParams -> String -> IO ()
+compileIonicSchedule sp targetDir = do
   let ivoryOpts = initialOpts { scErrors = False
                               , srcLocs = True
                               , outDir = Just targetDir
                               }
-  ionCompile ivoryOpts "ionicSchedule" ionSchedule
+  ionCompile ivoryOpts (sched_name sp) (ionSchedule sp)
 
-ionSchedule :: Ion ()
-ionSchedule = ion "schedule" $ do
+data ScheduleParams = ScheduleParams
+  { sched_pilotStep        :: Def ('[] ':-> ())
+  , sched_pilotTemperature :: MemArea ('Stored Uint8)
+  , sched_name             :: String
+  }
+
+ionSchedule :: ScheduleParams -> Ion ()
+ionSchedule ScheduleParams{..} = ion "schedule" $ do
+
+  period (111) $ do
+      phase 1 $ ivoryEff $ do
+          comment "Pilot step"
+          call_ sched_pilotStep
 
   period p $ do
 
@@ -41,16 +51,10 @@ ionSchedule = ion "schedule" $ do
           call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_RESET
 
       phase 3 $ ivoryEff $ do
-          modifyVar Iv.pilotTemperature ((.% 30) . (+1))
+          modifyVar sched_pilotTemperature ((.% 30) . (+1))
 
       phase (round $ fromIntegral p / 1.618) $ ivoryEff $ do
           call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET
 
       where
           p = 377
-
-  period (111) $ do
-      phase 1 $ ivoryEff $ do
-          comment "Pilot step"
-          call_ Iv.pilotStep
-

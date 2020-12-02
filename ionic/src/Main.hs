@@ -1,6 +1,4 @@
 {-# LANGUAGE ApplicativeDo #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -8,13 +6,18 @@ import Control.Applicative
 import Control.Monad
 import GHC.IO.Handle
 import GHC.IO.Handle.FD
+import Ivory.Compile.C.CmdlineFrontend
+import Ivory.Language
+import Ivory.Language
+import Ivory.Stdlib (stdlibModules)
+import Ivory.Stdlib.String
 import Options.Applicative as OA
-import qualified Data.Text.Lazy as TL
 import Text.Pretty.Simple
 
+import qualified Data.Text.Lazy as TL
 
 import Ionic
-import IvoryMain
+import Ivored.MainIvored
 import Pilot
 
 
@@ -46,7 +49,18 @@ main = join $ customExecParser (prefs showHelpOnError) $ info (opts <**> helper)
 
 compileMain :: Ops -> IO ()
 compileMain Ops{..} = do
+    compileCopiloted pilotInfo targetDir
+    compileIonicSchedule scheduleParams targetDir
+    compileIvoryMain scheduleParams targetDir
 
-  compileIonicSchedule targetDir
-  compileCopiloted targetDir
-  compileIvoryMain targetDir
+  where
+
+    compileIvoryMain :: ScheduleParams -> FilePath -> IO ()
+    compileIvoryMain sp dirpath = do
+      let opts = initialOpts { outDir = Just dirpath, srcLocs = True }
+      runCompiler (modules sp) stdlibStringArtifacts opts
+
+    modules :: ScheduleParams -> [Module]
+    modules sp = [ cmodule sp
+              ]
+              <> stdlibModules
