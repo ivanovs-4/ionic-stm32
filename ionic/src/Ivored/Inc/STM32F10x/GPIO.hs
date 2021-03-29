@@ -168,6 +168,9 @@ structInit :: Def ('[ Ref a ('Struct "GPIO_InitTypeDef_mock")] ':-> ())
 structInit = imProc "GPIO_StructInit"
 
 -- uint8_t GPIO_ReadInputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+readInputDataBit :: Def ('[ Ref a ('Struct "GPIO_TypeDef"), Uint16] ':-> BitAction)
+readInputDataBit = imProc "GPIO_ReadInputDataBit"
+
 -- uint16_t GPIO_ReadInputData(GPIO_TypeDef* GPIOx);
 -- uint8_t GPIO_ReadOutputDataBit(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
 -- uint16_t GPIO_ReadOutputData(GPIO_TypeDef* GPIOx);

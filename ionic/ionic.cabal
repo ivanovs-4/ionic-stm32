@@ -43,6 +43,7 @@ executable ionic
     DataKinds
     FlexibleInstances
     LambdaCase
+    NumericUnderscores
     OverloadedStrings
     QuasiQuotes
     RecordWildCards

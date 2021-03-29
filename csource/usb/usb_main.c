@@ -112,7 +112,7 @@ void usb_ionic_prepare(void)
 {
   Set_System();
   SetSysClockTo72();
-  Set_USBClock();
+  Set_USBClock();  // Configures USB Clock input (48MHz)
   USB_Interrupts_Config();
   USB_Init();
 }
