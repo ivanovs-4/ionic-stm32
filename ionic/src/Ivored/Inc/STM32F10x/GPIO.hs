@@ -155,6 +155,55 @@ pin_16 = ext "GPIO_Pin_16"
 pin_All :: Uint16
 pin_All = ext "GPIO_Pin_All"
 
+a1 = (gpioA, pin_1)
+a2 = (gpioA, pin_2)
+a3 = (gpioA, pin_3)
+a4 = (gpioA, pin_4)
+a5 = (gpioA, pin_5)
+a6 = (gpioA, pin_6)
+a7 = (gpioA, pin_7)
+a8 = (gpioA, pin_8)
+a9 = (gpioA, pin_9)
+a10 = (gpioA, pin_10)
+a11 = (gpioA, pin_11)
+a12 = (gpioA, pin_12)
+a13 = (gpioA, pin_13)
+a14 = (gpioA, pin_14)
+a15 = (gpioA, pin_15)
+
+b1 = (gpioB, pin_1)
+b2 = (gpioB, pin_2)
+b3 = (gpioB, pin_3)
+b4 = (gpioB, pin_4)
+b5 = (gpioB, pin_5)
+b6 = (gpioB, pin_6)
+b7 = (gpioB, pin_7)
+b8 = (gpioB, pin_8)
+b9 = (gpioB, pin_9)
+b10 = (gpioB, pin_10)
+b11 = (gpioB, pin_11)
+b12 = (gpioB, pin_12)
+b13 = (gpioB, pin_13)
+b14 = (gpioB, pin_14)
+b15 = (gpioB, pin_15)
+
+c1 = (gpioC, pin_1)
+c2 = (gpioC, pin_2)
+c3 = (gpioC, pin_3)
+c4 = (gpioC, pin_4)
+c5 = (gpioC, pin_5)
+c6 = (gpioC, pin_6)
+c7 = (gpioC, pin_7)
+c8 = (gpioC, pin_8)
+c9 = (gpioC, pin_9)
+c10 = (gpioC, pin_10)
+c11 = (gpioC, pin_11)
+c12 = (gpioC, pin_12)
+c13 = (gpioC, pin_13)
+c14 = (gpioC, pin_14)
+c15 = (gpioC, pin_15)
+
+
 
 -- void GPIO_DeInit(GPIO_TypeDef* GPIOx);
 -- void GPIO_AFIODeInit(void);

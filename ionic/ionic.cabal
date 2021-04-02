@@ -36,6 +36,8 @@ executable ionic
     , ivory-opts
     , ivory-stdlib
     , optparse-applicative
+    , lens
+    , mtl
     , pretty-simple
     , text
   -- other-extensions:
@@ -48,5 +50,6 @@ executable ionic
     QuasiQuotes
     RecordWildCards
     RecursiveDo
+    ScopedTypeVariables
     TypeApplications
     TypeOperators

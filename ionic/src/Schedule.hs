@@ -16,6 +16,7 @@ data ScheduleParams = ScheduleParams
   , sched_pilotStep        :: Def ('[] ':-> ())
   , sched_pilotTemperature :: MemArea ('Stored IBool)
   , sched_checkButtons     :: IvoryAction ()
+  , sched_matrix_schedule  :: [IvoryAction ()]
   -- , sched_blinkOff         :: IvoryAction ()
   }
 
@@ -32,6 +33,11 @@ ionSchedule ScheduleParams{..} = ion "schedule" $ do
       phase 0 $ ivoryEff $ do
           sched_checkButtons
 
+      phase 3 $ do
+        forM_ (zip [0..] sched_matrix_schedule) $ \(d, eff) -> do
+          delay d $ do
+              ivoryEff eff
+
       -- phase 3 $ ivoryEff $ do
       --     modifyVar sched_pilotTemperature ((.% 30) . (+1))
 
@@ -39,4 +45,4 @@ ionSchedule ScheduleParams{..} = ion "schedule" $ do
       --     sched_blinkOff
 
       where
-          p = 10
+          p = 30
