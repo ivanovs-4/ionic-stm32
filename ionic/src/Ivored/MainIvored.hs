@@ -16,13 +16,13 @@ import Ivored.Inc.STM32F10x
 import Pilot
 import Schedule
 
-[ivory|
-    struct btn_state
-      { on_off    :: Stored IBool
-      ; lasts_on  :: Stored Uint16
-      ; lasts_off :: Stored Uint16
-      }
-    |]
+-- [ivory|
+--     struct btn_state
+--       { on_off    :: Stored IBool
+--       ; lasts_on  :: Stored Uint16
+--       ; lasts_off :: Stored Uint16
+--       }
+--     |]
 
 cmodule :: ScheduleParams -> Module
 cmodule ScheduleParams {..} = package "main" $ do
@@ -56,24 +56,18 @@ cmodule ScheduleParams {..} = package "main" $ do
   incl main'
   incl sysTick_Handler
   incl ionicSchedule
-  incl sched_pilotStep
-  defStruct (Proxy :: Proxy "btn_state")
-
-  -- istruct [field0 .= 3; field1 .= 4]
+  -- defStruct (Proxy :: Proxy "btn_state")
 
   incl blinkOn
   incl blinkOff
-  defMemArea sched_pilotTemperature
 
-  -- defMemArea ((area "areaname" $ Just $ ival true) :: MemArea ('Stored IBool))
-  -- defMemArea ((area "areaname" Nothing) :: MemArea (Array 4 ('Stored IBool)))
-
-  incl initButtons
-  incl checkButtons
-  defMemArea rowNum
-
-  defMemArea area_raw_btn_scan
+  defMemArea area_btn_ignore
+  defMemArea area_btn_current_state
+  defMemArea area_btn_debounce_release
   incl process_raw_btn
+  -- incl handle_press
+  -- incl handle_release
+  defMemArea area_btn_presses
 
   --
 
@@ -91,10 +85,6 @@ cmodule ScheduleParams {..} = package "main" $ do
           call_ ionicSchedule
 
 
-
-area_raw_btn_scan :: MemArea (Array 7 ('Stored IBool))
-area_raw_btn_scan = area raw_btn_scan (Just $ iarray $ replicate btnCount (izero))
-
 matrix_schedule :: [Ivory eff ()]
 matrix_schedule =
   [ forM_ (fst <$> take 1 imatrix)
@@ -105,32 +95,51 @@ matrix_schedule =
       <&> \(mnext, ((gpioGrpAct, gpioPinAct), ipins)) ->
         [ do
             bs <- forM (snd <$> ipins) $ \(gpioGrpPas, gpioPinPas) -> do
-                call GPIO.readInputDataBit gpioGrpPas gpioPinPas
+                fmap (/=?0) $ call GPIO.readInputDataBit gpioGrpPas gpioPinPas
             call_ GPIO.writeBit gpioGrpAct gpioPinAct GPIO.bit_RESET
-            forM_ (zip (fst <$> ipins) bs) $ \(j, b) -> do
-                store (addrOf area_raw_btn_scan ! (fromIntegral j)) (b/=?0)
-        ] <>
-        [ do
+
+            forM_ (zip (fst <$> ipins) bs) $ \(j, b) -> call_ process_raw_btn (fromIntegral j) b
+
             forM_ mnext $ \(gpioGrpAct', gpioPinAct') -> do
                 call_ GPIO.writeBit gpioGrpAct' gpioPinAct' GPIO.bit_SET
-            forM_ (fst <$> ipins) $ call_ process_raw_btn . fromIntegral
         ]
       )
 
+area_btn_presses :: MemArea ('Stored Uint8)
+area_btn_presses = area btn_presses (Just $ ival 0)
 
-raw_btn_scan = "raw_btn_scan"
+area_btn_current_state :: MemArea (Array BtnCount ('Stored IBool))
+area_btn_current_state = area btn_current_state (Just $ iarray $ replicate btnCount (izero))
+
+area_btn_debounce_release :: MemArea (Array BtnCount ('Stored Uint8))
+area_btn_debounce_release = area btn_debounce_release Nothing
+
+area_btn_ignore :: MemArea (Array BtnCount ('Stored Uint8))
+area_btn_ignore = area btn_ignore (Just $ iarray $ replicate btnCount (izero))
+
+btn_presses = "btn_presses"
+btn_ignore = "btn_ignore"
+btn_current_state = "btn_current_state"
+btn_debounce_release = "btn_debounce_release"
+
 
 enumerateOf t = flip evalState 0 . mapMOf t (\a -> do { j <- get; modify succ; pure (j, a) })
 
 imatrix = enumerateOf (traverse . _2 . traverse) matrix
 
+type BtnCount = 5
 btnCount = sum . fmap (length . snd) $ matrix
+rowCount = length matrix
 matrix =
   [ ( b13, [ a8, a9, a10 ] )
   , ( b14, [     a9, a10 ] )
+  -- , ( b14, [     a9, a10 ] )
   ]
 
-
+periodTicks = length matrix_schedule
+oneTimeMatrixScanPeriodMicroseconds = 500
+tickPeriodMicroseconds :: Double
+tickPeriodMicroseconds = oneTimeMatrixScanPeriodMicroseconds / fromIntegral periodTicks
 
 
 main' :: Def ('[] ':-> ())
@@ -154,11 +163,10 @@ main' = proc "main" $ body $ do
   gpioInit s gpioA GPIO.pin_8 GPIO.mode_IPD GPIO.speed_2MHz
   gpioInit s gpioA GPIO.pin_9 GPIO.mode_IPD GPIO.speed_2MHz
 
-  call_ initButtons
   -- gpioInit s gpioB GPIO.pin_9 GPIO.mode_IN_FLOATING GPIO.speed_10MHz
 
   -- set up a timer
-  call_ sysTick_Config (systemCoreClock ./ 7_200)  -- Сработает 10_000 раз в секунду
+  call_ sysTick_Config (systemCoreClock ./ (fromIntegral . round $ 1_000_000 / tickPeriodMicroseconds))
 
   call_ handle_usb_loop
 
@@ -172,29 +180,81 @@ usb_ionic_prepare :: Def ('[] ':-> ())
 usb_ionic_prepare = importProc "usb_ionic_prepare" "usb_main.h"
 
 
-process_raw_btn :: Def ('[ Uint8 ] ':-> ())
-process_raw_btn = proc "process_raw_btn" $ \j -> body $ do
+handle_press :: Ix BtnCount -> Ivory eff ()
+handle_press j = do
+    modifyVar area_btn_presses (+1)
+    pure ()
+
+-- handle_release :: Int -> Ivory eff ()
+-- handle_release j = do
+--     pure ()
+
+-- handle_press :: Def ('[ Ix BtnCount ] ':-> ())
+-- handle_press = proc "handle_press" $ \j -> body $ do
+--     retVoid
+
+-- handle_release :: Def ('[ Ix BtnCount ] ':-> ())
+-- handle_release = proc "handle_release" $ \j -> body $ do
+--     retVoid
+
+process_raw_btn :: Def ('[ Ix BtnCount, IBool ] ':-> ())
+process_raw_btn = proc "process_raw_btn" $ \j b -> body $ do
+  let j_ignore = addrOf area_btn_ignore ! j
+  let j_current_state = addrOf area_btn_current_state ! j
+  let j_debounce = addrOf area_btn_debounce_release ! j
+  ignore <- deref j_ignore
+  ifte_ (ignore >? 0)
+    (do
+        store j_ignore (ignore - 1)
+    )
+    (do
+        current <- deref j_current_state
+        ifte_ current
+          (do
+              ifte_ b
+                (do
+                    store j_debounce debounceRelease
+                )
+                (do
+                    -- Если текущее состояние -- нажата, то отпускание
+                    -- засчитаем только через ignoreAfterPress после нажатия
+                    -- и debounceRelease стабильного отпускания.
+                    debounce <- deref j_debounce
+                    ifte_ (debounce >? 0)
+                      (do
+                          store j_debounce (debounce - 1)
+                      )
+                      (do
+                          store j_current_state false
+                          store j_ignore ignoreAfterRelease
+                          -- call_ handle_release j
+                          -- handle_release j
+                      )
+                )
+          )
+          (do
+              ifte_ b
+                (do
+                    -- Если текущее состоянине - отжата, то засчитываем нажатие
+                    -- сразу (но только если после отпускания прошло ignoreAfterRelease)
+                    store j_current_state true
+                    store j_ignore ignoreAfterPress
+                    store j_debounce debounceRelease
+                    -- call_ handle_press j
+                    handle_press j
+                )
+                (do
+                    pure ()
+                )
+          )
+    )
   retVoid
 
-{-
-  -- Строка установлена в предыдущем периоде и уже выполнено несколько измерений.
-  1. Ещё раз замерил значения в (теперь уже в текущей) строке.
-  1. Переключил на следующую строку (пока дальше идёт обсчёт, напряжения устанавливаются).
-  1. Для каждого элемента измеренной строки обсчитал измерения с голосованием
-        и учётом предыдущего измерения. Смена состояния происходит только если все
-        проголосовали одинаково. И только если после предыдущей смены состояния
-        прошло не меньше 48мс.
-  1. Обменялся с отдельной частью данными о состоянии кнопок.
-  1. Проинтерпретировал нажатия на обеих частях с учётом имеющегося состояния
-        модификаторов и режимов (мод).
-        Результаты отправил scan-code в кольцевой буфер usb.
-  1. Замерил значения в (следующей) строке.
-  1. Для каждого измеренного элемента строки вычислил новое значение подсветки,
-        прописал на вход dma и отправил на отдельную часть.
-  1. Ещё раз замерил значения в (следующей) строке.
-  --
--}
-
+  where
+    ignoreAfterPress = fromMs 40
+    ignoreAfterRelease = fromMs 20
+    debounceRelease = fromMs 10
+    fromMs v = fromIntegral . round $ v *1000 / oneTimeMatrixScanPeriodMicroseconds
 
 -- #ifdef USE_FULL_ASSERT
 -- void assert_failed(uint8_t* file, uint32_t line)
@@ -216,54 +276,28 @@ gpioInit s reg pin mode speed = do
 
 
 scheduleParams :: ScheduleParams
-scheduleParams = pilotInfo & \PilotInfo {..} -> do
+-- scheduleParams = pilotInfo & \PilotInfo {..} -> do
+scheduleParams = do
   let
     sched_name             = "ionic_schedule"
-    sched_pilotStep        = importProc "step" (pilotInfo_fileName <> ".h")
-    sched_pilotTemperature = area (pp_btnsState pilotInfo_params) $ Just $ ival true
-    sched_checkButtons     = call_ checkButtons
+    -- sched_pilotStep        = importProc "step" (pilotInfo_fileName <> ".h")
+    -- sched_pilotTemperature = area (pp_btnsState pilotInfo_params) $ Just $ ival true
     sched_matrix_schedule  = matrix_schedule
+    sched_period           = periodTicks
   ScheduleParams {..}
 
 
-pilotInfo :: PilotInfo
-pilotInfo = PilotInfo
-    { pilotInfo_params  = PilotParams
-        { pp_btnsState = "btns_state"
-        }
-    , pilotInfo_actions = PilotActions
-        { pa_blinkOn  = blinkOn'
-        , pa_blinkOff = blinkOff'
-        }
-    , pilotInfo_fileName = "pilot"
-    }
-
-
-initButtons :: Def ('[] ':-> ())
-initButtons = proc "init_buttons" $ body $ do
-    lightOff
-    retVoid
-
-checkButtons :: Def ('[] ':-> ())
-checkButtons = proc "check_buttons" $ body $ do
-
-    H.modifyVar rowNum ((.% 2) . (+1))
-
-    -- call_ GPIO.writeBit gpioB GPIO.pin_13 GPIO.bit_SET
-    -- b1 <- call GPIO.readInputDataBit gpioA GPIO.pin_8
-    -- b2 <- call GPIO.readInputDataBit gpioA GPIO.pin_9
-    -- call_ GPIO.writeBit gpioB GPIO.pin_13 GPIO.bit_RESET
-    -- ifte_ (b1 /=? 0)
-    --   (lightOn)
-    --   (pure ())
-    -- ifte_ (b2 /=? 0)
-    --   (lightOff)
-    --   (pure ())
-
-    retVoid
-
-rowNum :: MemArea ('Stored Uint8)
-rowNum = area "row_num" $ Just $ ival 0
+-- pilotInfo :: PilotInfo
+-- pilotInfo = PilotInfo
+--     { pilotInfo_params  = PilotParams
+--         { pp_btnsState = "btns_state"
+--         }
+--     , pilotInfo_actions = PilotActions
+--         { pa_blinkOn  = blinkOn'
+--         , pa_blinkOff = blinkOff'
+--         }
+--     , pilotInfo_fileName = "pilot"
+--     }
 
 
 

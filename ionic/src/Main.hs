@@ -49,7 +49,7 @@ main = join $ customExecParser (prefs showHelpOnError) $ info (opts <**> helper)
 
 compileMain :: Ops -> IO ()
 compileMain Ops{..} = do
-    compileCopiloted pilotInfo targetDir
+    -- compileCopiloted pilotInfo targetDir
     compileIonicSchedule scheduleParams targetDir
     compileIvoryMain scheduleParams targetDir
 

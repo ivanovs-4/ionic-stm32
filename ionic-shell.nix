@@ -3,9 +3,9 @@ let release = import ./nix/release.nix;
 in release.nixpkgs.haskellPackages.shellFor {
     nativeBuildInputs = with nixpkgs.haskellPackages; [
       cabal-install
+      ghcid
     ];
     buildInputs = with nixpkgs; [
-      # ghcid
     ];
     packages = _: nixpkgs.lib.attrValues release.ionic-projects;
   }

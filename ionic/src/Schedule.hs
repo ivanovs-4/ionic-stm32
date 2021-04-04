@@ -12,37 +12,25 @@ import Ivored.Inc.STM32F10x
 
 
 data ScheduleParams = ScheduleParams
-  { sched_name             :: String
-  , sched_pilotStep        :: Def ('[] ':-> ())
-  , sched_pilotTemperature :: MemArea ('Stored IBool)
-  , sched_checkButtons     :: IvoryAction ()
-  , sched_matrix_schedule  :: [IvoryAction ()]
-  -- , sched_blinkOff         :: IvoryAction ()
+  { sched_name             :: !String
+  -- , sched_pilotStep        :: !(Def ('[] ':-> ()))
+  -- , sched_pilotTemperature :: !(MemArea ('Stored IBool))
+  , sched_matrix_schedule  :: ![IvoryAction ()]
+  , sched_period           :: !Int
   }
 
 ionSchedule :: ScheduleParams -> Ion ()
 ionSchedule ScheduleParams{..} = ion "schedule" $ do
+
 
   -- period (111) $ do
   --     phase 1 $ ivoryEff $ do
   --         comment "Pilot step"
   --         call_ sched_pilotStep
 
-  period p $ do
+  period sched_period $ do
 
-      phase 0 $ ivoryEff $ do
-          sched_checkButtons
-
-      phase 3 $ do
+      phase 0 $ do
         forM_ (zip [0..] sched_matrix_schedule) $ \(d, eff) -> do
           delay d $ do
               ivoryEff eff
-
-      -- phase 3 $ ivoryEff $ do
-      --     modifyVar sched_pilotTemperature ((.% 30) . (+1))
-
-      -- phase (round $ fromIntegral p / 1.618) $ ivoryEff $ do
-      --     sched_blinkOff
-
-      where
-          p = 30
