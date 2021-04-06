@@ -1,7 +1,7 @@
 module Ivored.Inc.System_STM32F10x where
 
 import Ivory.Language
-import Ivory.Compile.C.CmdlineFrontend
+-- import Ivory.Compile.C.CmdlineFrontend
 
 
 -- extern uint32_t SystemCoreClock;          /*!< System Clock Frequency (Core Clock) */

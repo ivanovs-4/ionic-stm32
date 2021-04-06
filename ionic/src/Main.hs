@@ -31,6 +31,10 @@ parseOps = do
   targetDir <- argument str $ metavar "TARGET_DIR"
   pure $ Ops{..}
 
+mainDev :: IO ()
+mainDev = do
+    compileMain $ Ops { targetDir = "../_build/" }
+
 main :: IO ()
 main = join $ customExecParser (prefs showHelpOnError) $ info (opts <**> helper)
         ( fullDesc

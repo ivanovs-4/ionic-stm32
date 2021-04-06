@@ -2,7 +2,7 @@
 
 module Ivored.MainIvored where
 
-import Data.Function
+-- import Data.Function
 import Ivory.Language
 
 import Control.Lens
@@ -13,7 +13,7 @@ import qualified Ivored.Inc.STM32F10x.RCC as RCC
 
 import Ivored.Helpers as H
 import Ivored.Inc.STM32F10x
-import Pilot
+-- import Pilot
 import Schedule
 
 -- [ivory|

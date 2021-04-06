@@ -1,7 +1,7 @@
 module Ivored.Inc.STM32F10x.GPIO where
 
 import Ivory.Language
-import Ivory.Compile.C.CmdlineFrontend
+-- import Ivory.Compile.C.CmdlineFrontend
 
 import Ivored.Inc.STM32F10x hiding (hfile, imProc, ext)
 

@@ -1,7 +1,7 @@
 module Ivored.Inc.Core_CM3 where
 
 import Ivory.Language
-import Ivory.Compile.C.CmdlineFrontend
+-- import Ivory.Compile.C.CmdlineFrontend
 
 
 -- static __INLINE uint32_t SysTick_Config(uint32_t ticks)

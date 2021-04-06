@@ -1,13 +1,13 @@
 module Schedule where
 
 import Control.Monad
-import Data.Word
+-- import Data.Word
 import Ivory.Language
 import Ivory.Language.Ion.Base
 import Ivory.Language.Ion.Code
 import Ivory.Language.Ion.Operators
 
-import Ivored.Helpers
+-- import Ivored.Helpers
 import Ivored.Inc.STM32F10x
 
 

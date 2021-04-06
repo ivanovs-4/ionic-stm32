@@ -1,7 +1,7 @@
 module Ivored.Inc.STM32F10x.RCC where
 
 import Ivory.Language
-import Ivory.Compile.C.CmdlineFrontend
+-- import Ivory.Compile.C.CmdlineFrontend
 
 
 hfile = "stm32f10x_rcc.h"

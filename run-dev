@@ -1,0 +1,7 @@
+#!/usr/bin/env nix-shell
+#!nix-shell ionic-shell.nix -i bash
+set -eu pipefail
+(
+cd ionic
+ghcid -c "cabal new-repl" -r=Main.mainDev
+)
