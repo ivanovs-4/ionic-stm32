@@ -54,8 +54,10 @@ main = join $ customExecParser (prefs showHelpOnError) $ info (opts <**> helper)
 compileMain :: Ops -> IO ()
 compileMain Ops{..} = do
     -- compileCopiloted pilotInfo targetDir
-    compileIonicSchedule scheduleParams targetDir
-    compileIvoryMain scheduleParams targetDir
+
+    let (sp, cmod) = makeCModule
+    compileIvoryMain cmod targetDir
+    compileIonicSchedule sp targetDir
 
   where
 
@@ -67,12 +69,7 @@ compileMain Ops{..} = do
                                     }
         ionCompile ivoryOpts (sched_name sp) (ionSchedule sp)
 
-    compileIvoryMain :: ScheduleParams -> FilePath -> IO ()
-    compileIvoryMain sp dirpath = do
+    compileIvoryMain :: Module -> FilePath -> IO ()
+    compileIvoryMain cmod dirpath = do
         let opts = initialOpts { outDir = Just dirpath, srcLocs = True }
-        runCompiler (modules sp) stdlibStringArtifacts opts
-
-    modules :: ScheduleParams -> [Module]
-    modules sp = mempty
-              <> [ cmodule sp ]
-              <> stdlibModules
+        runCompiler ([cmod] <> stdlibModules) stdlibStringArtifacts opts
