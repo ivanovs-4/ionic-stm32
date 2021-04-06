@@ -17,6 +17,8 @@ data ScheduleParams = ScheduleParams
   -- , sched_pilotTemperature :: !(MemArea ('Stored IBool))
   , sched_matrix_schedule  :: ![IvoryAction ()]
   , sched_period           :: !Int
+  , sched_blink_on         :: !(IvoryAction ())
+  , sched_blink_off        :: !(IvoryAction ())
   }
 
 ionSchedule :: ScheduleParams -> Ion ()
@@ -34,3 +36,9 @@ ionSchedule ScheduleParams{..} = ion "schedule" $ do
         forM_ (zip [0..] sched_matrix_schedule) $ \(d, eff) -> do
           delay d $ do
               ivoryEff eff
+
+  period 4181 $ do
+      phase 0 $ do
+          ivoryEff sched_blink_on
+      phase (4181-2584) $ do
+          ivoryEff sched_blink_off

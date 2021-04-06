@@ -284,6 +284,8 @@ scheduleParams = do
     -- sched_pilotTemperature = area (pp_btnsState pilotInfo_params) $ Just $ ival true
     sched_matrix_schedule  = matrix_schedule
     sched_period           = periodTicks
+    sched_blink_on         = lightOn
+    sched_blink_off        = lightOff
   ScheduleParams {..}
 
 
