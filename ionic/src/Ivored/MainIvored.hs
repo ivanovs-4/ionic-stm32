@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE KindSignatures #-}
 
 module Ivored.MainIvored where
 
@@ -10,6 +11,7 @@ import Control.Monad (forM, forM_, join)
 import Control.Monad.State (evalState, get, modify)
 import           Ivored.Inc.STM32F10x.GPIO as GPIO
 import qualified Ivored.Inc.STM32F10x.RCC as RCC
+import GHC.Types (Symbol)
 
 import Ivored.Helpers as H
 import Ivored.Inc.STM32F10x
@@ -24,57 +26,81 @@ import Schedule
 --       }
 --     |]
 
+class CInclude a where
+  inc :: a -> ModuleDef
+
+instance CInclude BitAction where
+  inc = inclSym
+
+instance IvoryArea b => CInclude (Ref a b) where
+  inc = inclSym
+
+instance CInclude Uint16 where
+  inc = inclSym
+
+instance CInclude Uint32 where
+  inc = inclSym
+
+instance CInclude (Def a) where
+  inc = incl
+
+instance IvoryArea a => CInclude (MemArea a) where
+  inc = defMemArea
+
+instance IvoryStruct a => CInclude (Proxy (a :: Symbol)) where
+  inc = defStruct
+
 cmodule :: ScheduleParams -> Module
 cmodule ScheduleParams {..} = package "main" $ do
-  incl RCC._APB2PeriphClockCmd
-  inclSym RCC._APB2Periph_GPIOA
-  inclSym RCC._APB2Periph_GPIOB
-  inclSym RCC._APB2Periph_GPIOC
-  inclSym enable
-  incl GPIO.structInit
-  defStruct (Proxy :: Proxy "GPIO_InitTypeDef_mock")
-  incl GPIO.init
-  inclSym GPIO.bit_SET
-  inclSym GPIO.bit_RESET
-  inclSym GPIO.pin_8
-  inclSym GPIO.pin_9
-  inclSym GPIO.pin_13
-  inclSym GPIO.mode_IPD
-  inclSym GPIO.mode_Out_PP
-  inclSym GPIO.mode_IN_FLOATING
-  inclSym GPIO.speed_2MHz
-  inclSym GPIO.speed_10MHz
-  inclSym GPIO.speed_50MHz
-  incl GPIO.writeBit
-  incl GPIO.readInputDataBit
-  inclSym gpioA
-  inclSym gpioB
-  inclSym gpioC
-  incl sysTick_Config
-  inclSym systemCoreClock
+  inc RCC._APB2PeriphClockCmd
+  inc RCC._APB2Periph_GPIOA
+  inc RCC._APB2Periph_GPIOB
+  inc RCC._APB2Periph_GPIOC
+  inc enable
+  inc GPIO.structInit
+  inc (Proxy :: Proxy "GPIO_InitTypeDef_mock")
+  inc GPIO.init
+  inc GPIO.bit_SET
+  inc GPIO.bit_RESET
+  inc GPIO.pin_8
+  inc GPIO.pin_9
+  inc GPIO.pin_13
+  inc GPIO.mode_IPD
+  inc GPIO.mode_Out_PP
+  inc GPIO.mode_IN_FLOATING
+  inc GPIO.speed_2MHz
+  inc GPIO.speed_10MHz
+  inc GPIO.speed_50MHz
+  inc GPIO.writeBit
+  inc GPIO.readInputDataBit
+  inc gpioA
+  inc gpioB
+  inc gpioC
+  inc sysTick_Config
+  inc systemCoreClock
   --
-  incl main'
-  incl sysTick_Handler
-  incl ionicSchedule
-  -- defStruct (Proxy :: Proxy "btn_state")
+  inc main'
+  inc sysTick_Handler
+  inc ionicSchedule
+  -- inc (Proxy :: Proxy "btn_state")
 
-  incl blinkOn
-  incl blinkOff
+  inc blinkOn
+  inc blinkOff
 
-  defMemArea area_btn_ignore
-  defMemArea area_btn_current_state
-  defMemArea area_btn_debounce_release
-  incl process_raw_btn
-  -- incl handle_press
-  -- incl handle_release
-  defMemArea area_btn_presses
+  inc area_btn_ignore
+  inc area_btn_current_state
+  inc area_btn_debounce_release
+  inc process_raw_btn
+  -- inc handle_press
+  -- inc handle_release
+  inc area_btn_presses
 
   --
 
-  -- incl assert_failed
+  -- inc assert_failed
 
-  incl usb_ionic_prepare
-  incl handle_usb_loop
+  inc usb_ionic_prepare
+  inc handle_usb_loop
 
   where
       ionicSchedule :: Def ('[] ':-> ())

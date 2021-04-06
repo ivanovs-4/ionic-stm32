@@ -30,6 +30,7 @@ executable ionic
     , copilot
     , copilot-c99
     , directory
+    , ghc-prim
     , ion
     , ivory
     , ivory-backend-c
