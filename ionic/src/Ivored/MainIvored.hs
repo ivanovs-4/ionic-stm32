@@ -354,25 +354,10 @@ prepareUSB = do
     |]
 
 
--- #define EP0_OUT     ((uint8_t)0x00)
--- #define EP0_IN      ((uint8_t)0x80)
--- #define EP1_OUT     ((uint8_t)0x01)
--- #define EP1_IN      ((uint8_t)0x81)
--- #define EP2_OUT     ((uint8_t)0x02)
--- #define EP2_IN      ((uint8_t)0x82)
--- #define EP3_OUT     ((uint8_t)0x03)
--- #define EP3_IN      ((uint8_t)0x83)
--- #define EP4_OUT     ((uint8_t)0x04)
--- #define EP4_IN      ((uint8_t)0x84)
--- #define EP5_OUT     ((uint8_t)0x05)
--- #define EP5_IN      ((uint8_t)0x85)
--- #define EP6_OUT     ((uint8_t)0x06)
--- #define EP6_IN      ((uint8_t)0x86)
--- #define EP7_OUT     ((uint8_t)0x07)
--- #define EP7_IN      ((uint8_t)0x87)
-
--- ep1_IN = 0x81
 ep1 = 1
+
+type KeybufArraySize = 9
+keybufArraySize = fromIntegral $ natVal (Proxy :: Proxy KeybufArraySize)
 
 communicateUSB :: CModule (Ivory NoEffects ())
 communicateUSB = do
@@ -383,61 +368,37 @@ communicateUSB = do
     ring_key_buf :: MemArea (Array 3 ('Struct "Usb6keyStateMessage")) <- cdef $ area "ring_key_buf" $
         Just $ iarray $ replicate 3 $ istruct [ endpoint .= ival ep1, keybuffer .= iarray (ival 2 : replicate 8 (ival 0)) ]
 
-    keyboard_send_6key_state :: Def ('[Uint8, Ref Global (Array 9 (Stored Uint8))] ':-> ()) <- keyboardSend6keyState prev_xfer_complete
+    endpoint_addresses :: MemArea (Array 8 (Stored Uint8)) <- cdef $ area "endpoint_addresses" $
+        Just $ iarray $ ival <$> [ 0x80 , 0x81 , 0x82 , 0x83 , 0x84 , 0x85 , 0x86 , 0x87 ]
+
+    usb_sil_write :: Def ('[Uint8, Ref Global (Array KeybufArraySize (Stored Uint8)), Uint32] ':-> ()) <- cdef $
+        importProc "USB_SIL_Write" "usb_sil.h"
+
+    set_ep_tx_valid :: Def ('[Uint8] ':-> ()) <- cdef $
+        importProc "SetEPTxValid" "usb_regs.h"
+
+    -- a_usb_silence_ticks :: MemArea ('Stored Uint8) <- cdef $ area "a_usb_silence_ticks" $
+    --     Just $ ival 0
 
     pure $ do
         let
             r :: Ref Global ('Struct "Usb6keyStateMessage")
             r = addrOf ring_key_buf ! 2
 
-        ep <- deref $ r ~> endpoint
-        buf <- pure $ r ~> keybuffer
-
         ift_ (b_device_state ==? device_state_configured) $ do
             is_prev_xfer_complete <- deref $ addrOf prev_xfer_complete
             ift_ (is_prev_xfer_complete >? 0) $ do
 
-                call_ keyboard_send_6key_state ep buf
+                -- -- modifyVar a_usb_silence_ticks (+1)
+                -- store (addrOf a_usb_silence_ticks) 0
 
-keyboardSend6keyState :: MemArea (Stored Uint8) -> CModule (Def ('[Uint8, Ref Global (Array 9 (Stored Uint8))] ':-> ()))
-keyboardSend6keyState prev_xfer_complete = do
-    endoint_addresses :: MemArea (Array 8 (Stored Uint8)) <- cdef $ area "endoint_addresses" $
-        Just $ iarray $ ival <$> [ 0x80 , 0x81 , 0x82 , 0x83 , 0x84 , 0x85 , 0x86 , 0x87 ]
-    cdef $ proc "keyboard_send_6key_state" $
-        \ep buf -> body $ do
-            ep_addr <- deref $ addrOf endoint_addresses ! toIx ep
-            retVoid
+                ep <- deref $ r ~> endpoint
+                ep_addr <- deref $ addrOf endpoint_addresses ! toIx ep
+                buf <- pure $ r ~> keybuffer
 
- -- void keyboard_send_6key_state(buf)
- -- {
- --     USB_SIL_Write(EP1_IN, buf, 9);
- --     PrevXferComplete = 0;
- --     SetEPTxValid(ENDP1);
- --     while (PrevXferComplete == 0)
- --     {}
- -- }
-
-
-
-
-
--- void press_key_mod(char letter, uint8_t mod)
--- {
---     uint8_t MOD = 0;
---     uint8_t KEY = 0;
---     if(letter > 31)
---     {
---         KEY = keycodes[letter - 32];
---         if(KEY & 0x80)
---         {
---             MOD = MOD_SHIFT;
---             KEY &= 0x7f;
---         }
---     }
---     else if (letter == '\n') {
---       KEY = KEY_ENTER;
---     }
---     key_buf[1] = MOD | mod;
---     key_buf[3] = KEY;
---     //return key_buf;
--- }
+                -- USB_SIL_Write(EP1_IN, buf, 9);
+                call_ usb_sil_write ep_addr buf keybufArraySize
+                -- PrevXferComplete = 0;
+                store (addrOf prev_xfer_complete) 0
+                -- SetEPTxValid(ENDP1);
+                call_ set_ep_tx_valid ep
