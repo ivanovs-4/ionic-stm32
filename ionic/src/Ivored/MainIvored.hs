@@ -96,7 +96,7 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
   where
         -- inc assert_failed
 
-    (scheduleParams, cmodule) = runCModule $ do
+    (scheduleParams, cmodule) = runCModule $ mdo
 
         blinkOn <- cdef $ proc @('[] ':-> ()) "blinkon" $ body $ do
             lightOn
@@ -214,10 +214,6 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
             sched_period           = periodTicks
 
         usb_ionic_prepare :: Def ('[] ':-> ()) <- cdef $ importProc "usb_ionic_prepare" "usb_main.h"
-        handle_usb_loop   :: Def ('[] ':-> ()) <- cdef $ importProc "handle_usb_loop" "usb_main.h"
-
-        systemCoreClock' <- cdef systemCoreClock
-        sysTick_Config' <- cdef sysTick_Config
 
         pin_8 <- cdef GPIO.pin_8
 
@@ -249,6 +245,10 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
             call_ handle_usb_loop
 
             retVoid
+
+        systemCoreClock' <- cdef systemCoreClock
+        sysTick_Config' <- cdef sysTick_Config
+        handle_usb_loop   :: Def ('[] ':-> ()) <- cdef $ importProc "handle_usb_loop" "usb_main.h"
 
         pure $ ScheduleParams {..}
         where
