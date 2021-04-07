@@ -24,6 +24,7 @@ executable ionic
       , Ivored.Inc.STM32F10x.RCC
       , Ivored.Inc.STM32F10x.USB
       , Ivored.Inc.System_STM32F10x
+      , Ivored.Keycodes
       , Ivored.MainIvored
       , Pilot
       , Schedule
