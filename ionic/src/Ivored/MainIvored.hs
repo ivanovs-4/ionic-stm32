@@ -11,7 +11,7 @@ import Ivory.Language.Module
 import Control.Monad
 import Control.Monad.Writer.Strict (Writer, runWriter, tell)
 
-import Control.Lens
+import Control.Lens hiding ((.=))
 import Control.Monad (forM, forM_, join)
 import Control.Monad.State (evalState, get, modify)
 import           Ivored.Inc.STM32F10x.GPIO as GPIO
@@ -25,14 +25,6 @@ import Ivored.Helpers as H
 import Ivored.Inc.STM32F10x
 -- import Pilot
 import Schedule
-
--- [ivory|
---     struct btn_state
---       { on_off    :: Stored IBool
---       ; lasts_on  :: Stored Uint16
---       ; lasts_off :: Stored Uint16
---       }
---     |]
 
 class CInclude a where
   inc :: a -> ModuleDef
@@ -350,47 +342,102 @@ prepareUSB = do
         call_ usb_interrupts_config
         call_ usb_init
 
+--  * Keyboard buffer:
+--  * buf[1]: MOD
+--  * buf[2]: reserved
+--  * buf[3]..buf[8] - keycodes 1..6
+[ivory|
+    struct Usb6keyStateMessage
+      { endpoint  :: Stored Uint8
+      ; keybuffer :: Array 9 (Stored Uint8)
+      }
+    |]
+
+
+-- #define EP0_OUT     ((uint8_t)0x00)
+-- #define EP0_IN      ((uint8_t)0x80)
+-- #define EP1_OUT     ((uint8_t)0x01)
+-- #define EP1_IN      ((uint8_t)0x81)
+-- #define EP2_OUT     ((uint8_t)0x02)
+-- #define EP2_IN      ((uint8_t)0x82)
+-- #define EP3_OUT     ((uint8_t)0x03)
+-- #define EP3_IN      ((uint8_t)0x83)
+-- #define EP4_OUT     ((uint8_t)0x04)
+-- #define EP4_IN      ((uint8_t)0x84)
+-- #define EP5_OUT     ((uint8_t)0x05)
+-- #define EP5_IN      ((uint8_t)0x85)
+-- #define EP6_OUT     ((uint8_t)0x06)
+-- #define EP6_IN      ((uint8_t)0x86)
+-- #define EP7_OUT     ((uint8_t)0x07)
+-- #define EP7_IN      ((uint8_t)0x87)
+
+-- ep1_IN = 0x81
+ep1 = 1
+
 communicateUSB :: CModule (Ivory NoEffects ())
 communicateUSB = do
     prev_xfer_complete      <- cdef $ USB.prevXferComplete
     b_device_state          <- cdef $ USB.bDeviceState
     device_state_configured <- cdef $ USB.deviceStateConfigured
 
-    -- keyboard_send_6key_state <- cdef $ keyboard_send_6key_state
+    ring_key_buf :: MemArea (Array 3 ('Struct "Usb6keyStateMessage")) <- cdef $ area "ring_key_buf" $
+        Just $ iarray $ replicate 3 $ istruct [ endpoint .= ival ep1, keybuffer .= iarray (ival 2 : replicate 8 (ival 0)) ]
+
+    keyboard_send_6key_state :: Def ('[Uint8, Ref Global (Array 9 (Stored Uint8))] ':-> ()) <- keyboardSend6keyState prev_xfer_complete
+
     pure $ do
+        let
+            r :: Ref Global ('Struct "Usb6keyStateMessage")
+            r = addrOf ring_key_buf ! 2
+
+        ep <- deref $ r ~> endpoint
+        buf <- pure $ r ~> keybuffer
+
         ift_ (b_device_state ==? device_state_configured) $ do
             is_prev_xfer_complete <- deref $ addrOf prev_xfer_complete
             ift_ (is_prev_xfer_complete >? 0) $ do
 
-                -- keyboard_send_6key_state
+                call_ keyboard_send_6key_state ep buf
 
-                lightOn
+keyboardSend6keyState :: MemArea (Stored Uint8) -> CModule (Def ('[Uint8, Ref Global (Array 9 (Stored Uint8))] ':-> ()))
+keyboardSend6keyState prev_xfer_complete = do
+    endoint_addresses :: MemArea (Array 8 (Stored Uint8)) <- cdef $ area "endoint_addresses" $
+        Just $ iarray $ ival <$> [ 0x80 , 0x81 , 0x82 , 0x83 , 0x84 , 0x85 , 0x86 , 0x87 ]
+    cdef $ proc "keyboard_send_6key_state" $
+        \ep buf -> body $ do
+            ep_addr <- deref $ addrOf endoint_addresses ! toIx ep
+            retVoid
+
+ -- void keyboard_send_6key_state(buf)
+ -- {
+ --     USB_SIL_Write(EP1_IN, buf, 9);
+ --     PrevXferComplete = 0;
+ --     SetEPTxValid(ENDP1);
+ --     while (PrevXferComplete == 0)
+ --     {}
+ -- }
 
 
---   {
 
---     if (bDeviceState == CONFIGURED)
+
+
+-- void press_key_mod(char letter, uint8_t mod)
+-- {
+--     uint8_t MOD = 0;
+--     uint8_t KEY = 0;
+--     if(letter > 31)
 --     {
---       if (PrevXferComplete)
---       {
-
---         // uint8_t buf[9] = {2,0,0,0,0,0,0,0,0};
-
---         // buf <- get next portion to send
---         // press_key(ch);  // press_key_mod(k, 0)
---         keyboard_send_6key_state(buf);
-
---           // KEYBOARD_SEND_word("132 ");
---           // MOUSE_move(1,-1);
---           //RHIDCheckState();
---       }
-
--- //          // If received symbol '1' then LED turn on, else LED turn off
--- //          if (Receive_Buffer[0]=='1') {
--- //              GPIO_ResetBits(GPIOC, GPIO_Pin_13);
--- //          }
-
+--         KEY = keycodes[letter - 32];
+--         if(KEY & 0x80)
+--         {
+--             MOD = MOD_SHIFT;
+--             KEY &= 0x7f;
+--         }
 --     }
---   }
+--     else if (letter == '\n') {
+--       KEY = KEY_ENTER;
+--     }
+--     key_buf[1] = MOD | mod;
+--     key_buf[3] = KEY;
+--     //return key_buf;
 -- }
-
