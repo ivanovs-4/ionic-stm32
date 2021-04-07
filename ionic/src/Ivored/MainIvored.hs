@@ -17,6 +17,7 @@ import Control.Monad.State (evalState, get, modify)
 import           Ivored.Inc.STM32F10x.GPIO as GPIO
 import qualified Ivored.Inc.STM32F10x.RCC as RCC
 import GHC.Types (Symbol)
+import GHC.TypeNats
 
 import Ivored.Helpers as H
 import Ivored.Inc.STM32F10x
@@ -110,84 +111,16 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         _ :: Def ('[] ':-> ()) <- cdef $ proc "SysTick_Handler" $ body $ do
             call_ ionicSchedule
 
-        area_btn_debounce_release :: MemArea (Array BtnCount ('Stored Uint8)) <- cdef $ area "btn_debounce_release" $
-            Nothing
-
-        area_btn_presses :: MemArea ('Stored Uint8) <- cdef $ area "btn_presses" $
-            Just $ ival 0
-
         area_btn_current_state :: MemArea (Array BtnCount ('Stored IBool)) <- cdef $ area "btn_current_state" $
             Just $ iarray $ replicate btnCount (izero)
 
-        area_btn_ignore :: MemArea (Array BtnCount ('Stored Uint8)) <- cdef $ area "btn_ignore" $
-            Just $ iarray $ replicate btnCount (izero)
+        process_raw_btn <- processRawBtn area_btn_current_state oneTimeMatrixScanPeriodMicroseconds
 
         bit_SET <- cdef GPIO.bit_SET
         bit_RESET <- cdef GPIO.bit_RESET
         writeBit :: Def ('[Ref a ('Struct "GPIO_TypeDef"), Uint16, BitAction] ':-> ()) <- cdef $ GPIO.writeBit
         -- bitChange :: BitAction -> Ref a ('Struct "GPIO_TypeDef") -> Uint16 -> Ivory eff ()
         let bitChange bitAction grp pin = call_ writeBit grp pin bitAction
-
-        process_raw_btn :: Def ('[ Ix BtnCount, IBool ] ':-> ()) <- cdef $ proc "process_raw_btn" $
-          \j b -> body $
-          do
-              let
-                  j_ignore = addrOf area_btn_ignore ! j
-                  j_current_state = addrOf area_btn_current_state ! j
-                  j_debounce = addrOf area_btn_debounce_release ! j
-
-                  ignoreAfterPress = fromMs 40
-                  ignoreAfterRelease = fromMs 20
-                  debounceRelease = fromMs 10
-                  fromMs v = fromIntegral . round $ v *1000 / oneTimeMatrixScanPeriodMicroseconds
-
-              ignore <- deref j_ignore
-              ifte_ (ignore >? 0)
-                (do
-                    store j_ignore (ignore - 1)
-                )
-                (do
-                    current <- deref j_current_state
-                    ifte_ current
-                      (do
-                          ifte_ b
-                            (do
-                                store j_debounce debounceRelease
-                            )
-                            (do
-                                -- Если текущее состояние -- нажата, то отпускание
-                                -- засчитаем только через ignoreAfterPress после нажатия
-                                -- и debounceRelease стабильного отпускания.
-                                debounce <- deref j_debounce
-                                ifte_ (debounce >? 0)
-                                  (do
-                                      store j_debounce (debounce - 1)
-                                  )
-                                  (do
-                                      store j_current_state false
-                                      store j_ignore ignoreAfterRelease
-                                      -- call_ handle_release j
-                                      -- handle_release j
-                                  )
-                            )
-                      )
-                      (do
-                          ifte_ b
-                            (do
-                                -- Если текущее состоянине - отжата, то засчитываем нажатие
-                                -- сразу (но только если после отпускания прошло ignoreAfterRelease)
-                                store j_current_state true
-                                store j_ignore ignoreAfterPress
-                                store j_debounce debounceRelease
-                                -- call_ handle_press j
-                                handle_press area_btn_presses j
-                            )
-                            (do
-                                pure ()
-                            )
-                      )
-                )
-              retVoid
 
         let
             matrix_schedule :: [Ivory eff ()]
@@ -273,8 +206,82 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
 
 type BtnCount = 5
 
+processRawBtn :: forall bc. KnownNat bc =>
+       MemArea ('Array bc ('Stored IBool))
+    -> Double
+    -> CModule (Def ('[Ix bc, IBool] ':-> ()))
+processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds = do
+    let btnCount = fromIntegral $ natVal (Proxy :: Proxy bc)
+    a_btn_debounce_release :: MemArea (Array bc ('Stored Uint8)) <- cdef $ area "btn_debounce_release" $
+        Just $ iarray $ replicate btnCount (izero)
+    -- a_btn_presses :: MemArea ('Stored Uint8) <- cdef $ area "btn_presses" $
+    --     Just $ ival 0
+    a_btn_ignore :: MemArea (Array bc ('Stored Uint8)) <- cdef $ area "btn_ignore" $
+        Just $ iarray $ replicate btnCount (izero)
+    cdef $ proc "process_raw_btn" $
+        \j b -> body $
+          do
+              let
+                  j_ignore = addrOf a_btn_ignore ! j
+                  j_current_state = addrOf a_btn_current_state ! j
+                  j_debounce = addrOf a_btn_debounce_release ! j
 
-handle_press :: (IvoryStore a, Num a) => MemArea ('Stored a) -> Ix BtnCount -> Ivory eff ()
+                  ignoreAfterPress = fromMs 40
+                  ignoreAfterRelease = fromMs 20
+                  debounceRelease = fromMs 10
+                  fromMs v = fromIntegral . round $ v *1000 / oneTimeMatrixScanPeriodMicroseconds
+
+              ignore <- deref j_ignore
+              ifte_ (ignore >? 0)
+                (do
+                    store j_ignore (ignore - 1)
+                )
+                (do
+                    current <- deref j_current_state
+                    ifte_ current
+                      (do
+                          ifte_ b
+                            (do
+                                store j_debounce debounceRelease
+                            )
+                            (do
+                                -- Если текущее состояние -- нажата, то отпускание
+                                -- засчитаем только через ignoreAfterPress после нажатия
+                                -- и debounceRelease стабильного отпускания.
+                                debounce <- deref j_debounce
+                                ifte_ (debounce >? 0)
+                                  (do
+                                      store j_debounce (debounce - 1)
+                                  )
+                                  (do
+                                      store j_current_state false
+                                      store j_ignore ignoreAfterRelease
+                                      -- call_ handle_release j
+                                      -- handle_release j
+                                  )
+                            )
+                      )
+                      (do
+                          ifte_ b
+                            (do
+                                -- Если текущее состоянине - отжата, то засчитываем нажатие
+                                -- сразу (но только если после отпускания прошло ignoreAfterRelease)
+                                store j_current_state true
+                                store j_ignore ignoreAfterPress
+                                store j_debounce debounceRelease
+                                -- call_ handle_press j
+                                -- handle_press a_btn_presses j
+                            )
+                            (do
+                                pure ()
+                            )
+                      )
+                )
+              retVoid
+
+
+
+handle_press :: (IvoryStore a, Num a) => MemArea ('Stored a) -> Ix btnCount -> Ivory eff ()
 handle_press area_v j = do
     modifyVar area_v (+1)
     pure ()
