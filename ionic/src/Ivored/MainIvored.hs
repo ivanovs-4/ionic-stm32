@@ -111,7 +111,7 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         _ :: Def ('[] ':-> ()) <- cdef $ proc "SysTick_Handler" $ body $ do
             call_ ionicSchedule
 
-        area_btn_current_state :: MemArea (Array BtnCount ('Stored IBool)) <- cdef $ area "btn_current_state" $
+        area_btn_current_state :: MemArea (Array BtnCount ('Stored Uint32)) <- cdef $ area "btn_current_state" $
             Just $ iarray $ replicate btnCount (izero)
 
         process_raw_btn <- processRawBtn area_btn_current_state oneTimeMatrixScanPeriodMicroseconds
@@ -207,7 +207,7 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
 type BtnCount = 5
 
 processRawBtn :: forall bc. KnownNat bc =>
-       MemArea ('Array bc ('Stored IBool))
+       MemArea ('Array bc ('Stored Uint32))
     -> Double
     -> CModule (Def ('[Ix bc, IBool] ':-> ()))
 processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds = do
@@ -238,7 +238,7 @@ processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds = do
                 )
                 (do
                     current <- deref j_current_state
-                    ifte_ current
+                    ifte_ (current >? 0)
                       (do
                           ifte_ b
                             (do
@@ -254,7 +254,7 @@ processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds = do
                                       store j_debounce (debounce - 1)
                                   )
                                   (do
-                                      store j_current_state false
+                                      store j_current_state 0
                                       store j_ignore ignoreAfterRelease
                                       -- call_ handle_release j
                                       -- handle_release j
@@ -266,7 +266,7 @@ processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds = do
                             (do
                                 -- Если текущее состоянине - отжата, то засчитываем нажатие
                                 -- сразу (но только если после отпускания прошло ignoreAfterRelease)
-                                store j_current_state true
+                                store j_current_state $ (current <? maxBound) ? (current+1, current)
                                 store j_ignore ignoreAfterPress
                                 store j_debounce debounceRelease
                                 -- call_ handle_press j
