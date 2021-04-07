@@ -16,6 +16,8 @@ import Control.Monad (forM, forM_, join)
 import Control.Monad.State (evalState, get, modify)
 import           Ivored.Inc.STM32F10x.GPIO as GPIO
 import qualified Ivored.Inc.STM32F10x.RCC as RCC
+import qualified Ivored.Inc.STM32F10x.USB as USB
+
 import GHC.Types (Symbol)
 import GHC.TypeNats
 
@@ -143,15 +145,23 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
             tickPeriodMicroseconds :: Double
             tickPeriodMicroseconds = oneTimeMatrixScanPeriodMicroseconds / fromIntegral periodTicks
 
-            sched_matrix_schedule  = matrix_schedule
-            sched_period           = periodTicks
+            tickPeriodMilliseconds :: Double
+            tickPeriodMilliseconds = tickPeriodMicroseconds / 1_000
 
-        usb_ionic_prepare :: Def ('[] ':-> ()) <- cdef $ importProc "usb_ionic_prepare" "usb_main.h"
+            scheduleTicksFromMS = fromIntegral . round . (/ tickPeriodMilliseconds)
+
+            sched_matrix_schedule  = matrix_schedule
+            sched_period_matrix    = periodTicks
+            sched_period_communicate_usb = scheduleTicksFromMS 1.618
+
+        -- usb_ionic_prepare :: Def ('[] ':-> ()) <- cdef $ importProc "usb_ionic_prepare" "usb_main.h"
 
         pin_8 <- cdef GPIO.pin_8
 
+        prepare_usb <- prepareUSB
+
         main' :: Def ('[] ':-> ()) <- cdef $ proc "main" $ body $ do
-            call_ usb_ionic_prepare
+            noAlloc . noReturn $ prepare_usb
 
             -- enable clock for GPIO ports
             call_ RCC._APB2PeriphClockCmd (
@@ -175,13 +185,12 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
             -- set up a timer
             call_ sysTick_Config' (systemCoreClock' ./ (fromIntegral . round $ 1_000_000 / tickPeriodMicroseconds))
 
-            call_ handle_usb_loop
-
             retVoid
 
         systemCoreClock' <- cdef systemCoreClock
         sysTick_Config' <- cdef sysTick_Config
-        handle_usb_loop   :: Def ('[] ':-> ()) <- cdef $ importProc "handle_usb_loop" "usb_main.h"
+
+        sched_communicate_usb <- communicateUSB
 
         pure $ ScheduleParams {..}
         where
@@ -326,3 +335,62 @@ lightOn = do
 -- lightOff :: IvoryAction ()
 lightOff = do
     call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET
+
+prepareUSB :: CModule (Ivory NoEffects ())
+prepareUSB = do
+    set_system            <- cdef $ USB.setSystem
+    set_sys_clock_to72    <- cdef $ USB.setSysClockTo72
+    set_usb_clock         <- cdef $ USB.setUSBClock
+    usb_interrupts_config <- cdef $ USB.usbInterruptsConfig
+    usb_init              <- cdef $ USB.usbInit
+    pure $ do
+        call_ set_system
+        call_ set_sys_clock_to72
+        call_ set_usb_clock
+        call_ usb_interrupts_config
+        call_ usb_init
+
+communicateUSB :: CModule (Ivory NoEffects ())
+communicateUSB = do
+    prev_xfer_complete      <- cdef $ USB.prevXferComplete
+    b_device_state          <- cdef $ USB.bDeviceState
+    device_state_configured <- cdef $ USB.deviceStateConfigured
+
+    -- keyboard_send_6key_state <- cdef $ keyboard_send_6key_state
+    pure $ do
+        ift_ (b_device_state ==? device_state_configured) $ do
+            is_prev_xfer_complete <- deref $ addrOf prev_xfer_complete
+            ift_ (is_prev_xfer_complete >? 0) $ do
+
+                -- keyboard_send_6key_state
+
+                lightOn
+
+
+--   {
+
+--     if (bDeviceState == CONFIGURED)
+--     {
+--       if (PrevXferComplete)
+--       {
+
+--         // uint8_t buf[9] = {2,0,0,0,0,0,0,0,0};
+
+--         // buf <- get next portion to send
+--         // press_key(ch);  // press_key_mod(k, 0)
+--         keyboard_send_6key_state(buf);
+
+--           // KEYBOARD_SEND_word("132 ");
+--           // MOUSE_move(1,-1);
+--           //RHIDCheckState();
+--       }
+
+-- //          // If received symbol '1' then LED turn on, else LED turn off
+-- //          if (Receive_Buffer[0]=='1') {
+-- //              GPIO_ResetBits(GPIOC, GPIO_Pin_13);
+-- //          }
+
+--     }
+--   }
+-- }
+

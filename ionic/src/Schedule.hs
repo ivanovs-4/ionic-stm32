@@ -16,9 +16,12 @@ data ScheduleParams = ScheduleParams
   -- , sched_pilotStep        :: !(Def ('[] ':-> ()))
   -- , sched_pilotTemperature :: !(MemArea ('Stored IBool))
   , sched_matrix_schedule  :: ![IvoryAction ()]
-  , sched_period           :: !Int
-  , sched_blink_on         :: !(IvoryAction ())
-  , sched_blink_off        :: !(IvoryAction ())
+  , sched_period_matrix    :: !Int
+  -- , sched_blink_on         :: !(IvoryAction ())
+  -- , sched_blink_off        :: !(IvoryAction ())
+  -- , sched_period_1s        :: !Double
+  , sched_period_communicate_usb :: !Int
+  , sched_communicate_usb  :: !(IvoryAction ())
   }
 
 ionSchedule :: ScheduleParams -> Ion ()
@@ -30,15 +33,18 @@ ionSchedule ScheduleParams{..} = ion "schedule" $ do
   --         comment "Pilot step"
   --         call_ sched_pilotStep
 
-  period sched_period $ do
-
+  period sched_period_matrix $ do
       phase 0 $ do
         forM_ (zip [0..] sched_matrix_schedule) $ \(d, eff) -> do
           delay d $ do
               ivoryEff eff
 
-  period 4181 $ do
+  period sched_period_communicate_usb $ do
       phase 0 $ do
-          ivoryEff sched_blink_on
-      phase (4181-2584) $ do
-          ivoryEff sched_blink_off
+          ivoryEff sched_communicate_usb
+
+  -- period 4181 $ do
+  --     phase 0 $ do
+  --         ivoryEff sched_blink_on
+  --     phase (4181-2584) $ do
+  --         ivoryEff sched_blink_off

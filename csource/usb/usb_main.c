@@ -1,52 +1,7 @@
 #include "hw_config.h"
 #include "usb_lib.h"
 #include "usb_pwr.h"
-#include "keycodes.h"
 
-/* Private variables ---------------------------------------------------------*/
-__IO uint8_t PrevXferComplete = 1;
-
-extern uint8_t key_buf[9];
-
-// void MOUSE_move(int8_t x, int8_t y)
-// {
-//     /*
-//      * buf[0]: 1 - report ID
-//      * buf[1]: bit2 - middle button, bit1 - right, bit0 - left
-//      * buf[2]: move X
-//      * buf[3]: move Y
-//      * buf[4]: wheel
-//      */
-//     uint8_t buf[5] = {1,0,0,0,0};
-//     buf[2] = x; buf[3] = y;
-//     USB_SIL_Write(EP1_IN, buf, 5);
-//     PrevXferComplete = 0;
-//     SetEPTxValid(ENDP1);
-// }
-
-void KEYBOARD_SEND_key_buf(void)
-{
-    USB_SIL_Write(EP1_IN, key_buf, 9);
-    PrevXferComplete = 0;
-    SetEPTxValid(ENDP1);
-    while (PrevXferComplete == 0)
-    {}
-}
-
-void KEYBOARD_SEND_Char(char ch)
-{
-    press_key(ch);
-    KEYBOARD_SEND_key_buf();
-    release_key();
-    KEYBOARD_SEND_key_buf();
-}
-
-void KEYBOARD_SEND_word(char *wrd)
-{
-    do {
-        KEYBOARD_SEND_Char(*wrd);
-    } while(*(++wrd));
-}
 
 void SetSysClockTo72(void)
 {
@@ -106,36 +61,4 @@ void SetSysClockTo72(void)
         {
         }
     }
-}
-
-void usb_ionic_prepare(void)
-{
-  Set_System();
-  SetSysClockTo72();
-  Set_USBClock();  // Configures USB Clock input (48MHz)
-  USB_Interrupts_Config();
-  USB_Init();
-}
-
-void handle_usb_loop(void)
-{
-  while (1)
-  {
-
-    if (bDeviceState == CONFIGURED)
-    {
-      if (PrevXferComplete)
-      {
-          KEYBOARD_SEND_word("132 ");
-          // MOUSE_move(1,-1);
-          //RHIDCheckState();
-      }
-
-//          // If received symbol '1' then LED turn on, else LED turn off
-//          if (Receive_Buffer[0]=='1') {
-//              GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-//          }
-
-    }
-  }
 }

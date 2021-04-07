@@ -8,7 +8,6 @@
 #include "usb_desc.h"
 #include "usb_pwr.h"
 
-void usb_ionic_prepare(void);
-void handle_usb_loop(void);
+void SetSysClockTo72(void);
 
 #endif /* __USB_MAIN */

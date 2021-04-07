@@ -22,6 +22,7 @@ executable ionic
       , Ivored.Inc.STM32F10x
       , Ivored.Inc.STM32F10x.GPIO
       , Ivored.Inc.STM32F10x.RCC
+      , Ivored.Inc.STM32F10x.USB
       , Ivored.Inc.System_STM32F10x
       , Ivored.MainIvored
       , Pilot
