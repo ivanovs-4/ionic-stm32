@@ -17,8 +17,8 @@ data ScheduleParams = ScheduleParams
   -- , sched_pilotTemperature :: !(MemArea ('Stored IBool))
   , sched_matrix_schedule  :: ![IvoryAction ()]
   , sched_period_matrix    :: !Int
-  -- , sched_blink_on         :: !(IvoryAction ())
-  -- , sched_blink_off        :: !(IvoryAction ())
+  , sched_blink_on         :: !(IvoryAction ())
+  , sched_blink_off        :: !(IvoryAction ())
   -- , sched_period_1s        :: !Double
   , sched_period_communicate_usb :: !Int
   , sched_communicate_usb  :: !(IvoryAction ())
@@ -43,8 +43,8 @@ ionSchedule ScheduleParams{..} = ion "schedule" $ do
       phase 0 $ do
           ivoryEff sched_communicate_usb
 
-  -- period 4181 $ do
-  --     phase 0 $ do
-  --         ivoryEff sched_blink_on
-  --     phase (4181-2584) $ do
-  --         ivoryEff sched_blink_off
+  period 4181 $ do
+      phase 0 $ do
+          ivoryEff sched_blink_on
+      phase (4181-2584) $ do
+          ivoryEff sched_blink_off

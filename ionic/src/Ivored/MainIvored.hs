@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Ivored.MainIvored where
 
@@ -22,6 +23,7 @@ import GHC.Types (Symbol)
 import GHC.TypeNats
 
 import Ivored.Helpers as H
+import Ivored.Keycodes
 import Ivored.Inc.STM32F10x
 -- import Pilot
 import Schedule
@@ -62,6 +64,18 @@ cdef a = do
     tell . (:[]) $ inc a
     pure a
 
+--  * Keyboard buffer:
+--  * buf[1]: MOD
+--  * buf[2]: reserved
+--  * buf[3]..buf[8] - keycodes 1..6
+[ivory|
+    struct Usb6keyStateMessage
+      { endpoint  :: Stored Uint8
+      ; keybuffer :: Array 9 (Stored Uint8)
+      }
+    |]
+
+
 makeCModule :: (ScheduleParams, Module)
 makeCModule = (scheduleParams, ) $ package "main" $ do
         inc RCC._APB2PeriphClockCmd
@@ -71,6 +85,7 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         inc enable
         inc GPIO.structInit
         inc (Proxy :: Proxy "GPIO_InitTypeDef_mock")
+        inc (Proxy :: Proxy "Usb6keyStateMessage")
         inc GPIO.init
         inc GPIO.pin_9
         inc GPIO.pin_13
@@ -108,7 +123,11 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         area_btn_current_state :: MemArea (Array BtnCount ('Stored Uint32)) <- cdef $ area "btn_current_state" $
             Just $ iarray $ replicate btnCount (izero)
 
-        process_raw_btn <- processRawBtn area_btn_current_state oneTimeMatrixScanPeriodMicroseconds
+        ---------------- keys ----------
+        a_keys :: MemArea (Array KeyCount ('Stored IBool)) <- cdef $ area "keys" $
+            Just $ iarray $ replicate (numVal (Proxy @KeyCount)) (izero)
+
+        process_raw_btn <- processRawBtn area_btn_current_state oneTimeMatrixScanPeriodMicroseconds a_keys
 
         bit_SET <- cdef GPIO.bit_SET
         bit_RESET <- cdef GPIO.bit_RESET
@@ -182,7 +201,7 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         systemCoreClock' <- cdef systemCoreClock
         sysTick_Config' <- cdef sysTick_Config
 
-        sched_communicate_usb <- communicateUSB
+        sched_communicate_usb <- communicateUSB a_keys
 
         pure $ ScheduleParams {..}
         where
@@ -205,20 +224,49 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
       ]
 
 
+numVal :: (KnownNat n, Num b) => proxy n -> b
+numVal = fromIntegral . natVal
+
+type KeyCount = 256
+
 type BtnCount = 5
 
 processRawBtn :: forall bc. KnownNat bc =>
        MemArea ('Array bc ('Stored Uint32))
     -> Double
+    -> MemArea ('Array KeyCount ('Stored IBool))
     -> CModule (Def ('[Ix bc, IBool] ':-> ()))
-processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds = do
-    let btnCount = fromIntegral $ natVal (Proxy :: Proxy bc)
+processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds
+    a_keys
+  = do
     a_btn_debounce_release :: MemArea (Array bc ('Stored Uint8)) <- cdef $ area "btn_debounce_release" $
-        Just $ iarray $ replicate btnCount (izero)
-    -- a_btn_presses :: MemArea ('Stored Uint8) <- cdef $ area "btn_presses" $
-    --     Just $ ival 0
+        Just $ iarray $ replicate (numVal (Proxy @bc)) (izero)
     a_btn_ignore :: MemArea (Array bc ('Stored Uint8)) <- cdef $ area "btn_ignore" $
-        Just $ iarray $ replicate btnCount (izero)
+        Just $ iarray $ replicate (numVal (Proxy @bc)) (izero)
+
+
+
+
+    -- a_keys :: MemArea (Array KeyCount ('Stored IBool)) <- cdef $ area "keys" $
+    --     Just $ iarray $ replicate (numVal (Proxy @KeyCount)) (izero)
+
+    btn_to_key :: MemArea (Array bc (Stored Uint8)) <- cdef $ area "btn_to_key" $
+        Just $ iarray $ (ival . fromIntegral) <$>
+          [ key_A , key_B , key_C , key_D , key_E
+          -- , key_F , key_G , key_H , key_I , key_J , key_K , key_L , key_M , key_N , key_O
+          -- , key_P , key_Q , key_R , key_S , key_T , key_U , key_V , key_W , key_X , key_Y , key_Z
+          ]
+
+    let handle_press j = do
+          k <- deref $ addrOf btn_to_key ! toIx j
+          store (addrOf a_keys ! toIx k) true
+
+    let handle_release j = do
+          k <- deref $ addrOf btn_to_key ! toIx j
+          store (addrOf a_keys ! toIx k) false
+
+
+
     cdef $ proc "process_raw_btn" $
         \j b -> body $
           do
@@ -257,8 +305,7 @@ processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds = do
                                   (do
                                       store j_current_state 0
                                       store j_ignore ignoreAfterRelease
-                                      -- call_ handle_release j
-                                      -- handle_release j
+                                      handle_release j
                                   )
                             )
                       )
@@ -270,8 +317,7 @@ processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds = do
                                 store j_current_state $ (current <? maxBound) ? (current+1, current)
                                 store j_ignore ignoreAfterPress
                                 store j_debounce debounceRelease
-                                -- call_ handle_press j
-                                -- handle_press a_btn_presses j
+                                handle_press j
                             )
                             (do
                                 pure ()
@@ -342,31 +388,28 @@ prepareUSB = do
         call_ usb_interrupts_config
         call_ usb_init
 
---  * Keyboard buffer:
---  * buf[1]: MOD
---  * buf[2]: reserved
---  * buf[3]..buf[8] - keycodes 1..6
-[ivory|
-    struct Usb6keyStateMessage
-      { endpoint  :: Stored Uint8
-      ; keybuffer :: Array 9 (Stored Uint8)
-      }
-    |]
-
-
 ep1 = 1
 
 type KeybufArraySize = 9
-keybufArraySize = fromIntegral $ natVal (Proxy :: Proxy KeybufArraySize)
+keybufArraySize = fromIntegral $ numVal (Proxy @KeybufArraySize)
 
-communicateUSB :: CModule (Ivory NoEffects ())
-communicateUSB = do
+communicateUSB ::
+      MemArea (Array KeyCount ('Stored IBool))
+   -> CModule (Ivory NoEffects ())
+communicateUSB a_keys = do
     prev_xfer_complete      <- cdef $ USB.prevXferComplete
     b_device_state          <- cdef $ USB.bDeviceState
     device_state_configured <- cdef $ USB.deviceStateConfigured
 
+
+
     ring_key_buf :: MemArea (Array 3 ('Struct "Usb6keyStateMessage")) <- cdef $ area "ring_key_buf" $
         Just $ iarray $ replicate 3 $ istruct [ endpoint .= ival ep1, keybuffer .= iarray (ival 2 : replicate 8 (ival 0)) ]
+    let
+        current_key_buf :: Ref Global ('Struct "Usb6keyStateMessage")
+        current_key_buf = addrOf ring_key_buf ! 2
+
+
 
     endpoint_addresses :: MemArea (Array 8 (Stored Uint8)) <- cdef $ area "endpoint_addresses" $
         Just $ iarray $ ival <$> [ 0x80 , 0x81 , 0x82 , 0x83 , 0x84 , 0x85 , 0x86 , 0x87 ]
@@ -381,9 +424,16 @@ communicateUSB = do
     --     Just $ ival 0
 
     pure $ do
-        let
-            r :: Ref Global ('Struct "Usb6keyStateMessage")
-            r = addrOf ring_key_buf ! 2
+
+        IL.for (0 :: Ix 6) $ \j -> do
+            let keyNum = j + fromIntegral key_A
+            s <- deref (addrOf a_keys ! toIx keyNum)
+            store ((current_key_buf ~> keybuffer) ! (toIx $ j+3)) (s ? (safeCast keyNum, 0))
+            pure ()
+
+
+            -- current_key_buf :: Ref Global ('Struct "Usb6keyStateMessage")
+            -- current_key_buf = addrOf ring_key_buf ! 2
 
         ift_ (b_device_state ==? device_state_configured) $ do
             is_prev_xfer_complete <- deref $ addrOf prev_xfer_complete
@@ -392,9 +442,9 @@ communicateUSB = do
                 -- -- modifyVar a_usb_silence_ticks (+1)
                 -- store (addrOf a_usb_silence_ticks) 0
 
-                ep <- deref $ r ~> endpoint
+                ep <- deref $ current_key_buf ~> endpoint
                 ep_addr <- deref $ addrOf endpoint_addresses ! toIx ep
-                buf <- pure $ r ~> keybuffer
+                buf <- pure $ current_key_buf ~> keybuffer
 
                 -- USB_SIL_Write(EP1_IN, buf, 9);
                 call_ usb_sil_write ep_addr buf keybufArraySize
