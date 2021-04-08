@@ -87,7 +87,6 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         inc (Proxy :: Proxy "GPIO_InitTypeDef_mock")
         inc (Proxy :: Proxy "Usb6keyStateMessage")
         inc GPIO.init
-        inc GPIO.pin_9
         inc GPIO.pin_13
         inc GPIO.mode_IPD
         inc GPIO.mode_Out_PP
@@ -168,6 +167,8 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         -- usb_ionic_prepare :: Def ('[] ':-> ()) <- cdef $ importProc "usb_ionic_prepare" "usb_main.h"
 
         pin_8 <- cdef GPIO.pin_8
+        pin_9 <- cdef GPIO.pin_9
+        pin_10 <- cdef GPIO.pin_10
 
         prepare_usb <- prepareUSB
 
@@ -188,15 +189,17 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
 
             gpioInit s gpioB GPIO.pin_13 GPIO.mode_Out_PP GPIO.speed_2MHz
 
-            gpioInit s gpioA GPIO.pin_8 GPIO.mode_IPD GPIO.speed_2MHz
-            gpioInit s gpioA GPIO.pin_9 GPIO.mode_IPD GPIO.speed_2MHz
+            gpioInit s gpioA pin_8 GPIO.mode_IPD GPIO.speed_2MHz
+            gpioInit s gpioA pin_9 GPIO.mode_IPD GPIO.speed_2MHz
+            gpioInit s gpioA pin_10 GPIO.mode_IPD GPIO.speed_2MHz
 
             -- gpioInit s gpioB GPIO.pin_9 GPIO.mode_IN_FLOATING GPIO.speed_10MHz
 
             -- set up a timer
             call_ sysTick_Config' (systemCoreClock' ./ (fromIntegral . round $ 1_000_000 / tickPeriodMicroseconds))
 
-            retVoid
+            IL.forever $ pure ()
+
 
         systemCoreClock' <- cdef systemCoreClock
         sysTick_Config' <- cdef sysTick_Config
@@ -227,7 +230,7 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
 numVal :: (KnownNat n, Num b) => proxy n -> b
 numVal = fromIntegral . natVal
 
-type KeyCount = 256
+type KeyCount = 255
 
 type BtnCount = 5
 
@@ -252,8 +255,10 @@ processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds
 
     btn_to_key :: MemArea (Array bc (Stored Uint8)) <- cdef $ area "btn_to_key" $
         Just $ iarray $ (ival . fromIntegral) <$>
-          [ key_A , key_B , key_C , key_D , key_E
-          -- , key_F , key_G , key_H , key_I , key_J , key_K , key_L , key_M , key_N , key_O
+          -- [ key_A , key_B , key_C , key_D , key_E
+          [ key_F , key_G , key_H , key_I , key_J
+          -- , key_F , key_G , key_H , key_I , key_J
+          -- , key_K , key_L , key_M , key_N , key_O
           -- , key_P , key_Q , key_R , key_S , key_T , key_U , key_V , key_W , key_X , key_Y , key_Z
           ]
 
@@ -327,11 +332,6 @@ processRawBtn a_btn_current_state oneTimeMatrixScanPeriodMicroseconds
               retVoid
 
 
-
-handle_press :: (IvoryStore a, Num a) => MemArea ('Stored a) -> Ix btnCount -> Ivory eff ()
-handle_press area_v j = do
-    modifyVar area_v (+1)
-    pure ()
 
 -- #ifdef USE_FULL_ASSERT
 -- void assert_failed(uint8_t* file, uint32_t line)
@@ -425,19 +425,37 @@ communicateUSB a_keys = do
 
     pure $ do
 
-        IL.for (0 :: Ix 6) $ \j -> do
-            let keyNum = j + fromIntegral key_A
-            s <- deref (addrOf a_keys ! toIx keyNum)
-            store ((current_key_buf ~> keybuffer) ! (toIx $ j+3)) (s ? (safeCast keyNum, 0))
-            pure ()
-
-
-            -- current_key_buf :: Ref Global ('Struct "Usb6keyStateMessage")
-            -- current_key_buf = addrOf ring_key_buf ! 2
-
         ift_ (b_device_state ==? device_state_configured) $ do
             is_prev_xfer_complete <- deref $ addrOf prev_xfer_complete
             ift_ (is_prev_xfer_complete >? 0) $ do
+
+                -- forM_
+                --   [ (3, key_A)
+                --   , (4, key_B)
+                --   , (5, key_C)
+                --   , (6, key_D)
+                --   , (7, key_E)
+                --   ]
+                --   -- $ \(n, k) -> do
+                --   --   s <- deref $ addrOf a_keys ! fromIntegral k
+                --   --   ifte_ s
+                --   --       ( do
+                --   --           store ((current_key_buf ~> keybuffer) ! n) (fromIntegral k)
+                --   --           -- lightOff
+                --   --       )
+                --   --       ( do
+                --   --           store ((current_key_buf ~> keybuffer) ! n) 0
+                --   --           -- lightOn
+                --   --       )
+                --   $ \(n, k) -> do
+                --     s <- deref $ addrOf a_keys ! fromIntegral k
+                --     store ((current_key_buf ~> keybuffer) ! n) (s ? (fromIntegral k, 0))
+
+                IL.for (4 :: Ix 5) $ \j -> do
+                    let keyCode = toIx $ fromIx j + fromIntegral key_F
+                    s <- deref (addrOf a_keys ! keyCode)
+                    store ((current_key_buf ~> keybuffer) ! ((toIx . fromIx $ j)+3)) (s ? (safeCast keyCode, 0))
+
 
                 -- -- modifyVar a_usb_silence_ticks (+1)
                 -- store (addrOf a_usb_silence_ticks) 0
