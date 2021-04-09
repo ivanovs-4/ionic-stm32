@@ -18,6 +18,8 @@ executable ionic
   default-language:    Haskell2010
   other-modules:
         Ivored.Helpers
+      , Ivored.CModule
+      , Ivored.FIFO
       , Ivored.Inc.Core_CM3
       , Ivored.Inc.STM32F10x
       , Ivored.Inc.STM32F10x.GPIO
@@ -46,13 +48,17 @@ executable ionic
   -- other-extensions:
   default-extensions:
     DataKinds
+    FlexibleContexts
     FlexibleInstances
+    KindSignatures
     LambdaCase
     NumericUnderscores
     OverloadedStrings
+    PolyKinds
     QuasiQuotes
     RecordWildCards
     RecursiveDo
     ScopedTypeVariables
+    TupleSections
     TypeApplications
     TypeOperators
