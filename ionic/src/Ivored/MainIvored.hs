@@ -428,24 +428,17 @@ communicateUSB key_events = do
                               $ do
 
                                     -- clear possible key at first
-                                        -- Ivory has bug for such expression
-                                        -- It generates
-                                        -- `int32_t n_cse10 = (int32_t) ((int32_t) 6 % 7 - (int32_t) 1);`
-                                        -- while should
-                                        -- `int32_t n_cse10 = (int32_t) (((int32_t) 6 - (int32_t) 1) % 7);`
-                                    IL.for (6 :: Ix 7) $ \j -> do
-                                        let pos6 = (3+) . toIx . fromIx $ j
-                                        val <- deref $ ((current_key_buf ~> keybuffer) ! pos6)
+                                    3 `upTo` (8 :: Ix 9) $ \j -> do
+                                        val <- deref $ ((current_key_buf ~> keybuffer) ! j)
                                         ift_ (val ==? keycode) $ do
-                                            store ((current_key_buf ~> keybuffer) ! pos6) 0
+                                            store ((current_key_buf ~> keybuffer) ! j) 0
 
                                     ift_ keypress $ do
-                                        IL.for (6 :: Ix 7) $ \j -> do
-                                            let pos6 = (3+) . toIx . fromIx $ j
-                                            val <- deref $ ((current_key_buf ~> keybuffer) ! pos6)
+                                        3 `upTo` (8 :: Ix 9) $ \j -> do
+                                            val <- deref $ ((current_key_buf ~> keybuffer) ! j)
                                             ift_ (val ==? 0) $ do
                                                 -- Use first empty slot
-                                                store ((current_key_buf ~> keybuffer) ! pos6) (safeCast keycode)
+                                                store ((current_key_buf ~> keybuffer) ! j) (safeCast keycode)
                                                 breakOut
 
                         usb_send
