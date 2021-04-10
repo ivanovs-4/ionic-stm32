@@ -6,6 +6,7 @@ module Ivored.MainIvored where
 import Ivory.Language as IL
 import Ivory.Language.Module
 
+import Control.Arrow
 import Control.Monad
 
 import Control.Lens hiding ((.=))
@@ -15,6 +16,7 @@ import           Ivored.Inc.STM32F10x.GPIO as GPIO
 import qualified Ivored.Inc.STM32F10x.RCC as RCC
 import qualified Ivored.Inc.STM32F10x.USB as USB
 
+import Data.Functor
 import Data.Text (Text)
 import GHC.TypeNats
 
@@ -412,27 +414,44 @@ communicateUSB key_events = do
                             ev <- fifo_get key_events
                             keypress <- deref $ ev ~> keyEvent_press
                             keycode <- deref $ ev ~> keyEvent_keycode
+                            caseValue keycode
+                              ( [ (key_LEFTCTRL   , key_MOD_LCTRL  )
+                                , (key_LEFTSHIFT  , key_MOD_LSHIFT )
+                                , (key_LEFTALT    , key_MOD_LALT   )
+                                , (key_LEFTMETA   , key_MOD_LMETA  )
+                                , (key_RIGHTCTRL  , key_MOD_RCTRL  )
+                                , (key_RIGHTSHIFT , key_MOD_RSHIFT )
+                                , (key_RIGHTALT   , key_MOD_RALT   )
+                                , (key_RIGHTMETA  , key_MOD_RMETA  )
+                                ] <&> first fromIntegral
+                                    . second (\bit -> do
+                                              modifyRef ((current_key_buf ~> keybuffer) ! 1) $
+                                                  \mod -> keypress ? (mod .| bit, mod .& (iComplement bit))
+                                              )
+                                    . second fromIntegral
+                              )
+                              $ do
 
-                            -- clear possible key at first
-                                -- Ivory has bug for such expression
-                                -- It generates
-                                -- `int32_t n_cse10 = (int32_t) ((int32_t) 6 % 7 - (int32_t) 1);`
-                                -- while should
-                                -- `int32_t n_cse10 = (int32_t) (((int32_t) 6 - (int32_t) 1) % 7);`
-                            IL.for (6 :: Ix 7) $ \j -> do
-                                let pos6 = (3+) . toIx . fromIx $ j
-                                val <- deref $ ((current_key_buf ~> keybuffer) ! pos6)
-                                ift_ (val ==? keycode) $ do
-                                    store ((current_key_buf ~> keybuffer) ! pos6) 0
+                                    -- clear possible key at first
+                                        -- Ivory has bug for such expression
+                                        -- It generates
+                                        -- `int32_t n_cse10 = (int32_t) ((int32_t) 6 % 7 - (int32_t) 1);`
+                                        -- while should
+                                        -- `int32_t n_cse10 = (int32_t) (((int32_t) 6 - (int32_t) 1) % 7);`
+                                    IL.for (6 :: Ix 7) $ \j -> do
+                                        let pos6 = (3+) . toIx . fromIx $ j
+                                        val <- deref $ ((current_key_buf ~> keybuffer) ! pos6)
+                                        ift_ (val ==? keycode) $ do
+                                            store ((current_key_buf ~> keybuffer) ! pos6) 0
 
-                            ift_ keypress $ do
-                                IL.for (6 :: Ix 7) $ \j -> do
-                                    let pos6 = (3+) . toIx . fromIx $ j
-                                    val <- deref $ ((current_key_buf ~> keybuffer) ! pos6)
-                                    ift_ (val ==? 0) $ do
-                                        -- Use first empty slot
-                                        store ((current_key_buf ~> keybuffer) ! pos6) (safeCast keycode)
-                                        breakOut
+                                    ift_ keypress $ do
+                                        IL.for (6 :: Ix 7) $ \j -> do
+                                            let pos6 = (3+) . toIx . fromIx $ j
+                                            val <- deref $ ((current_key_buf ~> keybuffer) ! pos6)
+                                            ift_ (val ==? 0) $ do
+                                                -- Use first empty slot
+                                                store ((current_key_buf ~> keybuffer) ! pos6) (safeCast keycode)
+                                                breakOut
 
                         usb_send
                         store (addrOf a_usb_silence_ticks) 0
@@ -473,7 +492,7 @@ interpretateBtnEvents btn_events key_events = do
         Just $ iarray $ (ival . fromIntegral) <$>
           -- [ key_A , key_B , key_C , key_D , key_E
           -- , key_F , key_G , key_H , key_I , key_J
-          [ key_K , key_L , key_M , key_N , key_O
+          [ key_K , key_LEFTSHIFT , key_M , key_N , key_O
           -- , key_K , key_L , key_M , key_N , key_O
           -- , key_P , key_Q , key_R , key_S , key_T , key_U , key_V , key_W , key_X , key_Y , key_Z
           ]
