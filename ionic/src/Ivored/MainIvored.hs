@@ -389,7 +389,7 @@ communicateUSB key_events = do
         current_key_buf :: Ref Global ('Struct "Usb6keyStateMessage")
         current_key_buf = addrOf parallel_keybufs ! 0
 
-    a_usb_silence_ticks :: MemArea ('Stored Uint8) <- cdef $ area "a_usb_silence_ticks" $
+    a_usb_silence_ticks :: MemArea ('Stored Uint16) <- cdef $ area "a_usb_silence_ticks" $
         Just $ ival 0
 
     usb_send <- usbSend prev_xfer_complete current_key_buf
@@ -402,7 +402,7 @@ communicateUSB key_events = do
                 isKeyEventsEmpty <- fifo_isEmpty key_events
                 silenceTicks <- deref $ addrOf a_usb_silence_ticks
 
-                ifte_ (isKeyEventsEmpty .&& (silenceTicks <? 100))
+                ifte_ (isKeyEventsEmpty .&& (silenceTicks <? 330))
                     ( do
                         modifyVar a_usb_silence_ticks (+1)
                     )
