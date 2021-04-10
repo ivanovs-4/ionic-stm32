@@ -100,12 +100,9 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         _ :: Def ('[] ':-> ()) <- cdef $ proc "SysTick_Handler" $ body $ do
             call_ ionicSchedule
 
-        area_btn_current_state :: MemArea (Array BtnCount ('Stored Uint32)) <- cdef $ area "btn_current_state" $
-            Just $ iarray $ replicate btnCount (izero)
         btn_events :: FIFO BtnEventsFIFOSize ('Struct "BtnEvent") <- ringFIFO "btn_events"
-        process_raw_btn <- processRawBtn
+        process_raw_btn <- processRawBtn @BtnCount
             oneTimeMatrixScanPeriodMicroseconds
-            area_btn_current_state
             btn_events
 
         key_events :: FIFO KeyEventsFIFOSize ('Struct "KeyEvent") <- ringFIFO "key_events"
@@ -227,18 +224,18 @@ type BtnCount = 5
 
 processRawBtn :: forall bc evsn. (KnownNat bc, KnownNat evsn) =>
        Double
-    -> MemArea ('Array bc ('Stored Uint32))
     -> FIFO evsn ('Struct "BtnEvent")
     -> CModule (Def ('[Ix bc, IBool] ':-> ()))
 processRawBtn
     oneTimeMatrixScanPeriodMicroseconds
-    a_btn_current_state
     btn_events
   = do
+    a_btn_current_state :: MemArea (Array bc ('Stored Uint32)) <- cdef $ area "btn_current_state" $
+        Just $ iarray $ replicate (numVal (Proxy @bc)) izero
     a_btn_debounce_release :: MemArea (Array bc ('Stored Uint8)) <- cdef $ area "btn_debounce_release" $
-        Just $ iarray $ replicate (numVal (Proxy @bc)) (izero)
+        Just $ iarray $ replicate (numVal (Proxy @bc)) izero
     a_btn_ignore :: MemArea (Array bc ('Stored Uint8)) <- cdef $ area "btn_ignore" $
-        Just $ iarray $ replicate (numVal (Proxy @bc)) (izero)
+        Just $ iarray $ replicate (numVal (Proxy @bc)) izero
 
     cdef $ proc "process_raw_btn" $
         \j b -> body $
