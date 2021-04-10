@@ -19,3 +19,19 @@ caseValue :: IvoryEq a => a -> [(a, Ivory NoEffects ())] -> (Ivory NoEffects ())
 caseValue a abs defb = foldr one defb abs
   where
     one (a', x) b = ifte_ (a ==? a') x b
+
+caseValueBounded :: forall a b.
+    ( IvoryEq a, IvoryOrd a, Num a, Integral b
+    ) => a -> [(b, Ivory NoEffects ())] -> Ivory NoEffects () -> Ivory NoEffects ()
+caseValueBounded a bs defb =
+    if (null bs)
+        then defb
+        else do
+          ifte_ ((a >=? fromIntegral a_min) .&& (a<=? fromIntegral a_max))
+              (foldr one (pure ()) bs)
+              defb
+  where
+    as = fst <$> bs
+    a_max = maximum as
+    a_min = minimum as
+    one (a', x) b = ifte_ (a ==? fromIntegral a') x b

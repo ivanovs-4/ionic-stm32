@@ -411,7 +411,7 @@ communicateUSB key_events = do
                             ev <- fifo_get key_events
                             keypress <- deref $ ev ~> keyEvent_press
                             keycode <- deref $ ev ~> keyEvent_keycode
-                            caseValue keycode
+                            caseValueBounded keycode
                               ( [ (key_LEFTCTRL   , key_MOD_LCTRL  )
                                 , (key_LEFTSHIFT  , key_MOD_LSHIFT )
                                 , (key_LEFTALT    , key_MOD_LALT   )
@@ -420,12 +420,10 @@ communicateUSB key_events = do
                                 , (key_RIGHTSHIFT , key_MOD_RSHIFT )
                                 , (key_RIGHTALT   , key_MOD_RALT   )
                                 , (key_RIGHTMETA  , key_MOD_RMETA  )
-                                ] <&> first fromIntegral
-                                    . second (\bit -> do
+                                ] <&> second (fromIntegral >>> \bit -> do
                                               modifyRef ((current_key_buf ~> keybuffer) ! 1) $
                                                   \mod -> keypress ? (mod .| bit, mod .& (iComplement bit))
                                               )
-                                    . second fromIntegral
                               )
                               $ do
 
