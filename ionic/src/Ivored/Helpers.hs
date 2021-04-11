@@ -28,7 +28,7 @@ caseValueBounded a bs defb =
         then defb
         else do
           ifte_ ((a >=? fromIntegral a_min) .&& (a<=? fromIntegral a_max))
-              (foldr one (pure ()) bs)
+              (foldr one defb bs)
               defb
   where
     as = fst <$> bs
