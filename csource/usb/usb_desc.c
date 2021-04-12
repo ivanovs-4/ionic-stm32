@@ -33,31 +33,31 @@
 /* USB Standard Device Descriptor */
 const uint8_t RHID_DeviceDescriptor[RHID_SIZ_DEVICE_DESC] =
   {
-		    RHID_SIZ_DEVICE_DESC,         // общая длина дескриптора устройства в байтах
-		    USB_DEVICE_DESCRIPTOR_TYPE, // bDescriptorType - показывает, что это за дескриптор. В данном случае - Device descriptor
-		    0x00, 0x02,                 // bcdUSB - какую версию стандарта USB поддерживает устройство. 2.0
+      RHID_SIZ_DEVICE_DESC,         // РѕР±С‰Р°СЏ РґР»РёРЅР° РґРµСЃРєСЂРёРїС‚РѕСЂР° СѓСЃС‚СЂРѕР№СЃС‚РІР° РІ Р±Р°Р№С‚Р°С…
+      USB_DEVICE_DESCRIPTOR_TYPE, // bDescriptorType - РїРѕРєР°Р·С‹РІР°РµС‚, С‡С‚Рѕ СЌС‚Рѕ Р·Р° РґРµСЃРєСЂРёРїС‚РѕСЂ. Р’ РґР°РЅРЅРѕРј СЃР»СѓС‡Р°Рµ - Device descriptor
+      0x00, 0x02,                 // bcdUSB - РєР°РєСѓСЋ РІРµСЂСЃРёСЋ СЃС‚Р°РЅРґР°СЂС‚Р° USB РїРѕРґРґРµСЂР¶РёРІР°РµС‚ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ. 2.0
 
-			// класс, подкласс устройства и протокол, по стандарту USB. У нас нули, означает каждый интерфейс сам за себя
-		    0x00,                       //bDeviceClass
-		    0x00,                       //bDeviceSubClass
-		    0x00,                       //bDeviceProtocol
+      // РєР»Р°СЃСЃ, РїРѕРґРєР»Р°СЃСЃ СѓСЃС‚СЂРѕР№СЃС‚РІР° Рё РїСЂРѕС‚РѕРєРѕР», РїРѕ СЃС‚Р°РЅРґР°СЂС‚Сѓ USB. РЈ РЅР°СЃ РЅСѓР»Рё, РѕР·РЅР°С‡Р°РµС‚ РєР°Р¶РґС‹Р№ РёРЅС‚РµСЂС„РµР№СЃ СЃР°Рј Р·Р° СЃРµР±СЏ
+      0x00,                       //bDeviceClass
+      0x00,                       //bDeviceSubClass
+      0x00,                       //bDeviceProtocol
 
-		    0x40,                       //bMaxPacketSize - максимальный размер пакетов для Endpoint 0 (при конфигурировании)
+      0x40,                       //bMaxPacketSize - РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ СЂР°Р·РјРµСЂ РїР°РєРµС‚РѕРІ РґР»СЏ Endpoint 0 (РїСЂРё РєРѕРЅС„РёРіСѓСЂРёСЂРѕРІР°РЅРёРё)
 
-			// те самые пресловутые VID и PID,  по которым и определяется, что же это за устройство.
-			// в реальных устройствах надо покупать VID, чтобы устройства можно было различать и подсовывать нужные драйвера
-		    0x83, 0x04,                 //idVendor (0x0483)
-		    0x10, 0x57,                 //idProduct (0x5711)
+      // С‚Рµ СЃР°РјС‹Рµ РїСЂРµСЃР»РѕРІСѓС‚С‹Рµ VID Рё PID,  РїРѕ РєРѕС‚РѕСЂС‹Рј Рё РѕРїСЂРµРґРµР»СЏРµС‚СЃСЏ, С‡С‚Рѕ Р¶Рµ СЌС‚Рѕ Р·Р° СѓСЃС‚СЂРѕР№СЃС‚РІРѕ.
+      // РІ СЂРµР°Р»СЊРЅС‹С… СѓСЃС‚СЂРѕР№СЃС‚РІР°С… РЅР°РґРѕ РїРѕРєСѓРїР°С‚СЊ VID, С‡С‚РѕР±С‹ СѓСЃС‚СЂРѕР№СЃС‚РІР° РјРѕР¶РЅРѕ Р±С‹Р»Рѕ СЂР°Р·Р»РёС‡Р°С‚СЊ Рё РїРѕРґСЃРѕРІС‹РІР°С‚СЊ РЅСѓР¶РЅС‹Рµ РґСЂР°Р№РІРµСЂР°
+      0x83, 0x04,                 //idVendor (0x0483)
+      0x10, 0x57,                 //idProduct (0x5711)
 
-		    DEVICE_VER_L, DEVICE_VER_H,                 // bcdDevice rel. DEVICE_VER_H.DEVICE_VER_L  номер релиза устройства
+      DEVICE_VER_L, DEVICE_VER_H,                 // bcdDevice rel. DEVICE_VER_H.DEVICE_VER_L  РЅРѕРјРµСЂ СЂРµР»РёР·Р° СѓСЃС‚СЂРѕР№СЃС‚РІР°
 
-			// дальше идут индексы строк, описывающих производителя, устройство и серийный номер.
-			// Отображаются в свойствах устройства в диспетчере устройств
-			// А по серийному номеру подключенные устройства с одинаковым VID/PID различаются системой.
-		    1,                          //Index of string descriptor describing manufacturer
-		    2,                          //Index of string descriptor describing product
-		    3,                          //Index of string descriptor describing the device serial number
-		    0x01                        // bNumConfigurations - количество возможных конфигураций. У нас одна.
+      // РґР°Р»СЊС€Рµ РёРґСѓС‚ РёРЅРґРµРєСЃС‹ СЃС‚СЂРѕРє, РѕРїРёСЃС‹РІР°СЋС‰РёС… РїСЂРѕРёР·РІРѕРґРёС‚РµР»СЏ, СѓСЃС‚СЂРѕР№СЃС‚РІРѕ Рё СЃРµСЂРёР№РЅС‹Р№ РЅРѕРјРµСЂ.
+      // РћС‚РѕР±СЂР°Р¶Р°СЋС‚СЃСЏ РІ СЃРІРѕР№СЃС‚РІР°С… СѓСЃС‚СЂРѕР№СЃС‚РІР° РІ РґРёСЃРїРµС‚С‡РµСЂРµ СѓСЃС‚СЂРѕР№СЃС‚РІ
+      // Рђ РїРѕ СЃРµСЂРёР№РЅРѕРјСѓ РЅРѕРјРµСЂСѓ РїРѕРґРєР»СЋС‡РµРЅРЅС‹Рµ СѓСЃС‚СЂРѕР№СЃС‚РІР° СЃ РѕРґРёРЅР°РєРѕРІС‹Рј VID/PID СЂР°Р·Р»РёС‡Р°СЋС‚СЃСЏ СЃРёСЃС‚РµРјРѕР№.
+      1,                          //Index of string descriptor describing manufacturer
+      2,                          //Index of string descriptor describing product
+      3,                          //Index of string descriptor describing the device serial number
+      0x01                        // bNumConfigurations - РєРѕР»РёС‡РµСЃС‚РІРѕ РІРѕР·РјРѕР¶РЅС‹С… РєРѕРЅС„РёРіСѓСЂР°С†РёР№. РЈ РЅР°СЃ РѕРґРЅР°.
   }
   ; /* CustomHID_DeviceDescriptor */
 
@@ -66,123 +66,123 @@ const uint8_t RHID_DeviceDescriptor[RHID_SIZ_DEVICE_DESC] =
 /*   All Descriptors (Configuration, Interface, Endpoint, Class, Vendor */
 const uint8_t RHID_ConfigDescriptor[RHID_SIZ_CONFIG_DESC] =
   {
-		    0x09, 			// bLength: длина дескриптора конфигурации
-		    USB_CONFIGURATION_DESCRIPTOR_TYPE, // bDescriptorType: тип дескриптора - конфигурация
-		    RHID_SIZ_CONFIG_DESC, 0x00, // wTotalLength: общий размер всего дерева под данной конфигурацией в байтах
+      0x09,             // bLength: РґР»РёРЅР° РґРµСЃРєСЂРёРїС‚РѕСЂР° РєРѕРЅС„РёРіСѓСЂР°С†РёРё
+      USB_CONFIGURATION_DESCRIPTOR_TYPE, // bDescriptorType: С‚РёРї РґРµСЃРєСЂРёРїС‚РѕСЂР° - РєРѕРЅС„РёРіСѓСЂР°С†РёСЏ
+      RHID_SIZ_CONFIG_DESC, 0x00, // wTotalLength: РѕР±С‰РёР№ СЂР°Р·РјРµСЂ РІСЃРµРіРѕ РґРµСЂРµРІР° РїРѕРґ РґР°РЅРЅРѕР№ РєРѕРЅС„РёРіСѓСЂР°С†РёРµР№ РІ Р±Р°Р№С‚Р°С…
 
-		    0x01,         // bNumInterfaces: в конфигурации всего один интерфейс
-		    0x01,         // bConfigurationValue: индекс данной конфигурации
-		    0x00,         // iConfiguration: индекс строки, которая описывает эту конфигурацию
-		    0xE0,         // bmAttributes: признак того, что устройство будет питаться от шины USB
-		    0x32,         // MaxPower 100 mA: и ему хватит 100 мА
+      0x01,         // bNumInterfaces: РІ РєРѕРЅС„РёРіСѓСЂР°С†РёРё РІСЃРµРіРѕ РѕРґРёРЅ РёРЅС‚РµСЂС„РµР№СЃ
+      0x01,         // bConfigurationValue: РёРЅРґРµРєСЃ РґР°РЅРЅРѕР№ РєРѕРЅС„РёРіСѓСЂР°С†РёРё
+      0x00,         // iConfiguration: РёРЅРґРµРєСЃ СЃС‚СЂРѕРєРё, РєРѕС‚РѕСЂР°СЏ РѕРїРёСЃС‹РІР°РµС‚ СЌС‚Сѓ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ
+      0xE0,         // bmAttributes: РїСЂРёР·РЅР°Рє С‚РѕРіРѕ, С‡С‚Рѕ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ Р±СѓРґРµС‚ РїРёС‚Р°С‚СЊСЃСЏ РѕС‚ С€РёРЅС‹ USB
+      0x32,         // MaxPower 100 mA: Рё РµРјСѓ С…РІР°С‚РёС‚ 100 РјРђ
 
-				/************** Дескриптор интерфейса ****************/
-				0x09,         // bLength: размер дескриптора интерфейса
-				USB_INTERFACE_DESCRIPTOR_TYPE, // bDescriptorType: тип дескриптора - интерфейс
-				0x00,         // bInterfaceNumber: порядковый номер интерфейса - 0
-				0x00,         // bAlternateSetting: признак альтернативного интерфейса, у нас не используется
-				0x02,         // bNumEndpoints - количество эндпоинтов.
+      /************** Р”РµСЃРєСЂРёРїС‚РѕСЂ РёРЅС‚РµСЂС„РµР№СЃР° ****************/
+      0x09,         // bLength: СЂР°Р·РјРµСЂ РґРµСЃРєСЂРёРїС‚РѕСЂР° РёРЅС‚РµСЂС„РµР№СЃР°
+      USB_INTERFACE_DESCRIPTOR_TYPE, // bDescriptorType: С‚РёРї РґРµСЃРєСЂРёРїС‚РѕСЂР° - РёРЅС‚РµСЂС„РµР№СЃ
+      0x00,         // bInterfaceNumber: РїРѕСЂСЏРґРєРѕРІС‹Р№ РЅРѕРјРµСЂ РёРЅС‚РµСЂС„РµР№СЃР° - 0
+      0x00,         // bAlternateSetting: РїСЂРёР·РЅР°Рє Р°Р»СЊС‚РµСЂРЅР°С‚РёРІРЅРѕРіРѕ РёРЅС‚РµСЂС„РµР№СЃР°, Сѓ РЅР°СЃ РЅРµ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ
+      0x02,         // bNumEndpoints - РєРѕР»РёС‡РµСЃС‚РІРѕ СЌРЅРґРїРѕРёРЅС‚РѕРІ.
 
-				0x03,         // bInterfaceClass: класс интерфеса - HID
-				// если бы мы косили под стандартное устройство, например клавиатуру или мышь, то надо было бы указать правильно класс и подкласс
-				// а так у нас общее HID-устройство
-				0x00,         // bInterfaceSubClass : подкласс интерфейса.
-				0x00,         // nInterfaceProtocol : протокол интерфейса
+      0x03,         // bInterfaceClass: РєР»Р°СЃСЃ РёРЅС‚РµСЂС„РµСЃР° - HID
+      // РµСЃР»Рё Р±С‹ РјС‹ РєРѕСЃРёР»Рё РїРѕРґ СЃС‚Р°РЅРґР°СЂС‚РЅРѕРµ СѓСЃС‚СЂРѕР№СЃС‚РІРѕ, РЅР°РїСЂРёРјРµСЂ РєР»Р°РІРёР°С‚СѓСЂСѓ РёР»Рё РјС‹С€СЊ, С‚Рѕ РЅР°РґРѕ Р±С‹Р»Рѕ Р±С‹ СѓРєР°Р·Р°С‚СЊ РїСЂР°РІРёР»СЊРЅРѕ РєР»Р°СЃСЃ Рё РїРѕРґРєР»Р°СЃСЃ
+      // Р° С‚Р°Рє Сѓ РЅР°СЃ РѕР±С‰РµРµ HID-СѓСЃС‚СЂРѕР№СЃС‚РІРѕ
+      0x00,         // bInterfaceSubClass : РїРѕРґРєР»Р°СЃСЃ РёРЅС‚РµСЂС„РµР№СЃР°.
+      0x00,         // nInterfaceProtocol : РїСЂРѕС‚РѕРєРѕР» РёРЅС‚РµСЂС„РµР№СЃР°
 
-				0,            // iInterface: индекс строки, описывающей интерфейс
+      0,            // iInterface: РёРЅРґРµРєСЃ СЃС‚СЂРѕРєРё, РѕРїРёСЃС‹РІР°СЋС‰РµР№ РёРЅС‚РµСЂС„РµР№СЃ
 
-					// теперь отдельный дескриптор для уточнения того, что данный интерфейс - это HID устройство
-					/******************** HID дескриптор ********************/
-					0x09,         // bLength: длина HID-дескриптора
-					HID_DESCRIPTOR_TYPE, // bDescriptorType: тип дескриптора - HID
-					0x01, 0x01,   // bcdHID: номер версии HID 1.1
-					0x00,         // bCountryCode: код страны (если нужен)
-					0x01,         // bNumDescriptors: Сколько дальше будет report дескрипторов
-						HID_REPORT_DESCRIPTOR_TYPE,         // bDescriptorType: Тип дескриптора - report
-						RHID_SIZ_REPORT_DESC,	0x00, // wItemLength: длина report-дескриптора
+      // С‚РµРїРµСЂСЊ РѕС‚РґРµР»СЊРЅС‹Р№ РґРµСЃРєСЂРёРїС‚РѕСЂ РґР»СЏ СѓС‚РѕС‡РЅРµРЅРёСЏ С‚РѕРіРѕ, С‡С‚Рѕ РґР°РЅРЅС‹Р№ РёРЅС‚РµСЂС„РµР№СЃ - СЌС‚Рѕ HID СѓСЃС‚СЂРѕР№СЃС‚РІРѕ
+      /******************** HID РґРµСЃРєСЂРёРїС‚РѕСЂ ********************/
+      0x09,         // bLength: РґР»РёРЅР° HID-РґРµСЃРєСЂРёРїС‚РѕСЂР°
+      HID_DESCRIPTOR_TYPE, // bDescriptorType: С‚РёРї РґРµСЃРєСЂРёРїС‚РѕСЂР° - HID
+      0x01, 0x01,   // bcdHID: РЅРѕРјРµСЂ РІРµСЂСЃРёРё HID 1.1
+      0x00,         // bCountryCode: РєРѕРґ СЃС‚СЂР°РЅС‹ (РµСЃР»Рё РЅСѓР¶РµРЅ)
+      0x01,         // bNumDescriptors: РЎРєРѕР»СЊРєРѕ РґР°Р»СЊС€Рµ Р±СѓРґРµС‚ report РґРµСЃРєСЂРёРїС‚РѕСЂРѕРІ
+              HID_REPORT_DESCRIPTOR_TYPE,         // bDescriptorType: РўРёРї РґРµСЃРєСЂРёРїС‚РѕСЂР° - report
+              RHID_SIZ_REPORT_DESC,    0x00, // wItemLength: РґР»РёРЅР° report-РґРµСЃРєСЂРёРїС‚РѕСЂР°
 
 
-					/******************** дескриптор конечных точек (endpoints) ********************/
-					0x07,          // bLength: длина дескриптора
-					USB_ENDPOINT_DESCRIPTOR_TYPE, // тип дескриптора - endpoints
+      /******************** РґРµСЃРєСЂРёРїС‚РѕСЂ РєРѕРЅРµС‡РЅС‹С… С‚РѕС‡РµРє (endpoints) ********************/
+      0x07,          // bLength: РґР»РёРЅР° РґРµСЃРєСЂРёРїС‚РѕСЂР°
+      USB_ENDPOINT_DESCRIPTOR_TYPE, // С‚РёРї РґРµСЃРєСЂРёРїС‚РѕСЂР° - endpoints
 
-					0x81,          // bEndpointAddress: адрес конечной точки и направление 1(IN)
-					0x03,          // bmAttributes: тип конечной точки - Interrupt endpoint
-					wMaxPacketSize, 0x00,    // wMaxPacketSize:  Bytes max
-					0x20,          // bInterval: Polling Interval (32 ms)
+      0x81,          // bEndpointAddress: Р°РґСЂРµСЃ РєРѕРЅРµС‡РЅРѕР№ С‚РѕС‡РєРё Рё РЅР°РїСЂР°РІР»РµРЅРёРµ 1(IN)
+      0x03,          // bmAttributes: С‚РёРї РєРѕРЅРµС‡РЅРѕР№ С‚РѕС‡РєРё - Interrupt endpoint
+      wMaxPacketSize, 0x00,    // wMaxPacketSize:  Bytes max
+      0x20,          // bInterval: Polling Interval (32 ms)
 
-          0x07,	/* bLength: Endpoint Descriptor size */
-          USB_ENDPOINT_DESCRIPTOR_TYPE,	/* bDescriptorType: */
-            /*	Endpoint descriptor type */
-          0x01,	/* bEndpointAddress: */
-            /*	Endpoint Address (OUT) */
-          0x03,	/* bmAttributes: Interrupt endpoint */
-          wMaxPacketSize,	/* wMaxPacketSize:  Bytes max  */
-          0x00,
-          0x20,	/* bInterval: Polling Interval (32 ms) */
+      0x07,    /* bLength: Endpoint Descriptor size */
+      USB_ENDPOINT_DESCRIPTOR_TYPE,    /* bDescriptorType: */
+      /*    Endpoint descriptor type */
+      0x01,    /* bEndpointAddress: */
+      /*    Endpoint Address (OUT) */
+      0x03,    /* bmAttributes: Interrupt endpoint */
+      wMaxPacketSize,    /* wMaxPacketSize:  Bytes max  */
+      0x00,
+      0x20,    /* bInterval: Polling Interval (32 ms) */
 }
   ; /* RHID_ConfigDescriptor */
 const uint8_t RHID_ReportDescriptor[RHID_SIZ_REPORT_DESC] =
   {
-		    0x05, 0x01, /* Usage Page (Generic Desktop)             */
-		    0x09, 0x02, /* Usage (Mouse)                            */
-		    0xA1, 0x01, /* Collection (Application)                 */
-		    0x09, 0x01, /*  Usage (Pointer)                         */
-		    0xA1, 0x00, /*  Collection (Physical)                   */
-		    0x85, 0x01,  /*   Report ID  */
-		    0x05, 0x09, /*      Usage Page (Buttons)                */
-		    0x19, 0x01, /*      Usage Minimum (01)                  */
-		    0x29, 0x03, /*      Usage Maximum (03)                  */
-		    0x15, 0x00, /*      Logical Minimum (0)                 */
-		    0x25, 0x01, /*      Logical Maximum (0)                 */
-		    0x95, 0x03, /*      Report Count (3)                    */
-		    0x75, 0x01, /*      Report Size (1)                     */
-		    0x81, 0x02, /*      Input (Data, Variable, Absolute)    */
-		    0x95, 0x01, /*      Report Count (1)                    */
-		    0x75, 0x05, /*      Report Size (5)                     */
-		    0x81, 0x01, /*      Input (Constant)    ;5 bit padding  */
-		    0x05, 0x01, /*      Usage Page (Generic Desktop)        */
-		    0x09, 0x30, /*      Usage (X)                           */
-		    0x09, 0x31, /*      Usage (Y)                           */
-		    0x15, 0x81, /*      Logical Minimum (-127)              */
-		    0x25, 0x7F, /*      Logical Maximum (127)               */
-		    0x75, 0x08, /*      Report Size (8)                     */
-		    0x95, 0x02, /*      Report Count (2)                    */
-		    0x81, 0x06, /*      Input (Data, Variable, Relative)    */
-		    0xC0, 0xC0,/* End Collection,End Collection            */
-		//
-		    0x09, 0x06, /*		Usage (Keyboard)                    */
-		    0xA1, 0x01, /*		Collection (Application)            */
-		    0x85, 0x02,  /*   Report ID  */
-		    0x05, 0x07, /*  	Usage (Key codes)                   */
-		    0x19, 0xE0, /*      Usage Minimum (224)                 */
-		    0x29, 0xE7, /*      Usage Maximum (231)                 */
-		    0x15, 0x00, /*      Logical Minimum (0)                 */
-		    0x25, 0x01, /*      Logical Maximum (1)                 */
-		    0x75, 0x01, /*      Report Size (1)                     */
-		    0x95, 0x08, /*      Report Count (8)                    */
-		    0x81, 0x02, /*      Input (Data, Variable, Absolute)    */
-		    0x95, 0x01, /*      Report Count (1)                    */
-		    0x75, 0x08, /*      Report Size (8)                     */
-		    0x81, 0x01, /*      Input (Constant)    ;5 bit padding  */
-		    0x95, 0x05, /*      Report Count (5)                    */
-		    0x75, 0x01, /*      Report Size (1)                     */
-		    0x05, 0x08, /*      Usage Page (Page# for LEDs)         */
-		    0x19, 0x01, /*      Usage Minimum (01)                  */
-		    0x29, 0x05, /*      Usage Maximum (05)                  */
-		    0x91, 0x02, /*      Output (Data, Variable, Absolute)   */
-		    0x95, 0x01, /*      Report Count (1)                    */
-		    0x75, 0x03, /*      Report Size (3)                     */
-		    0x91, 0x01, /*      Output (Constant)                   */
-		    0x95, 0x06, /*      Report Count (1)                    */
-		    0x75, 0x08, /*      Report Size (3)                     */
-		    0x15, 0x00, /*      Logical Minimum (0)                 */
-		    0x25, 0x65, /*      Logical Maximum (101)               */
-		    0x05, 0x07, /*  	Usage (Key codes)                   */
-		    0x19, 0x00, /*      Usage Minimum (00)                  */
-		    0x29, 0x65, /*      Usage Maximum (101)                 */
-		    0x81, 0x00, /*      Input (Data, Array)                 */
-		    0xC0 /* 		End Collection,End Collection       */
+      0x05, 0x01, /* Usage Page (Generic Desktop)             */
+      0x09, 0x02, /* Usage (Mouse)                            */
+      0xA1, 0x01, /* Collection (Application)                 */
+      0x09, 0x01, /*  Usage (Pointer)                         */
+      0xA1, 0x00, /*  Collection (Physical)                   */
+      0x85, 0x01,  /*   Report ID  */
+      0x05, 0x09, /*      Usage Page (Buttons)                */
+      0x19, 0x01, /*      Usage Minimum (01)                  */
+      0x29, 0x03, /*      Usage Maximum (03)                  */
+      0x15, 0x00, /*      Logical Minimum (0)                 */
+      0x25, 0x01, /*      Logical Maximum (0)                 */
+      0x95, 0x03, /*      Report Count (3)                    */
+      0x75, 0x01, /*      Report Size (1)                     */
+      0x81, 0x02, /*      Input (Data, Variable, Absolute)    */
+      0x95, 0x01, /*      Report Count (1)                    */
+      0x75, 0x05, /*      Report Size (5)                     */
+      0x81, 0x01, /*      Input (Constant)    ;5 bit padding  */
+      0x05, 0x01, /*      Usage Page (Generic Desktop)        */
+      0x09, 0x30, /*      Usage (X)                           */
+      0x09, 0x31, /*      Usage (Y)                           */
+      0x15, 0x81, /*      Logical Minimum (-127)              */
+      0x25, 0x7F, /*      Logical Maximum (127)               */
+      0x75, 0x08, /*      Report Size (8)                     */
+      0x95, 0x02, /*      Report Count (2)                    */
+      0x81, 0x06, /*      Input (Data, Variable, Relative)    */
+      0xC0, 0xC0,/* End Collection,End Collection            */
+      //
+      0x09, 0x06, /*        Usage (Keyboard)                    */
+      0xA1, 0x01, /*        Collection (Application)            */
+      0x85, 0x02,  /*   Report ID  */
+      0x05, 0x07, /*      Usage (Key codes)                   */
+      0x19, 0xE0, /*      Usage Minimum (224)                 */
+      0x29, 0xE7, /*      Usage Maximum (231)                 */
+      0x15, 0x00, /*      Logical Minimum (0)                 */
+      0x25, 0x01, /*      Logical Maximum (1)                 */
+      0x75, 0x01, /*      Report Size (1)                     */
+      0x95, 0x08, /*      Report Count (8)                    */
+      0x81, 0x02, /*      Input (Data, Variable, Absolute)    */
+      0x95, 0x01, /*      Report Count (1)                    */
+      0x75, 0x08, /*      Report Size (8)                     */
+      0x81, 0x01, /*      Input (Constant)    ;5 bit padding  */
+      0x95, 0x05, /*      Report Count (5)                    */
+      0x75, 0x01, /*      Report Size (1)                     */
+      0x05, 0x08, /*      Usage Page (Page# for LEDs)         */
+      0x19, 0x01, /*      Usage Minimum (01)                  */
+      0x29, 0x05, /*      Usage Maximum (05)                  */
+      0x91, 0x02, /*      Output (Data, Variable, Absolute)   */
+      0x95, 0x01, /*      Report Count (1)                    */
+      0x75, 0x03, /*      Report Size (3)                     */
+      0x91, 0x01, /*      Output (Constant)                   */
+      0x95, 0x06, /*      Report Count (1)                    */
+      0x75, 0x08, /*      Report Size (3)                     */
+      0x15, 0x00, /*      Logical Minimum (0)                 */
+      0x25, 0x65, /*      Logical Maximum (101)               */
+      0x05, 0x07, /*      Usage (Key codes)                   */
+      0x19, 0x00, /*      Usage Minimum (00)                  */
+      0x29, 0x65, /*      Usage Maximum (101)                 */
+      0x81, 0x00, /*      Input (Data, Array)                 */
+      0xC0 /*         End Collection,End Collection       */
 }
   ; /* RHID_ReportDescriptor */
 
