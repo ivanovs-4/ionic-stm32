@@ -5,6 +5,9 @@ import Ivory.Language
 import Data.Foldable
 
 
+type IvoryPure = Ivory NoEffects ()
+
+
 modifyVar :: IvoryStore a => MemArea ('Stored a) -> (a -> a) -> Ivory eff ()
 modifyVar v f = modifyRef (addrOf v) f
 

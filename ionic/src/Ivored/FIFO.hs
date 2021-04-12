@@ -10,9 +10,9 @@ import Ivored.Helpers as H
 data FIFO n a = FIFO
   { fifo_isEmpty :: Ivory NoEffects IBool
   , fifo_isFull  :: Ivory NoEffects IBool
-  , fifo_put     :: MemArea a -> Ivory NoEffects ()
+  , fifo_put     :: MemArea a -> IvoryPure
   , fifo_head    :: Ivory NoEffects (Ref Global a)
-  , fifo_putHead :: Ivory NoEffects ()
+  , fifo_putHead :: IvoryPure
   , fifo_get     :: Ivory NoEffects (Ref Global a)
   }
 
@@ -68,22 +68,32 @@ ringFIFO name = do
 
     pure FIFO {..}
 
-fifo_putSafe :: FIFO n a -> MemArea a -> Ivory NoEffects ()
-fifo_putSafe FIFO {..} a = do
+fifo_putSafe :: FIFO n a -> MemArea a -> IvoryPure
+fifo_putSafe fifo a = fifo_putSafeDef fifo (pure ()) a
+
+fifo_putSafeDef :: FIFO n a -> IvoryPure -> MemArea a -> IvoryPure
+fifo_putSafeDef FIFO {..} d a = do
     isFull <- fifo_isFull
-    ift_ (iNot isFull) $ do
+    ifte_ isFull d $ do
         fifo_put a
 
-fifo_putHeadSafe :: FIFO n a -> MemArea a -> Ivory NoEffects ()
-fifo_putHeadSafe FIFO {..} a = do
-    isFull <- fifo_isFull
-    ift_ (iNot isFull) $ do
-        fifo_putHead
+fifo_withHead :: FIFO n a -> (Ref 'Global a -> IvoryPure) -> IvoryPure
+fifo_withHead fifo f = fifo_withHeadDef fifo (pure ()) f
 
-fifo_withHead :: FIFO n a -> (Ref 'Global a -> Ivory NoEffects ()) -> Ivory NoEffects ()
-fifo_withHead FIFO {..} f = do
+fifo_withHeadDef :: FIFO n a -> IvoryPure -> (Ref 'Global a -> IvoryPure) -> IvoryPure
+fifo_withHeadDef FIFO {..} d f = do
     isFull <- fifo_isFull
-    ift_ (iNot isFull) $ do
+    ifte_ isFull d $ do
         head <- fifo_head
         f head
         fifo_putHead
+
+fifo_withGet :: FIFO n a -> (Ref 'Global a -> IvoryPure) -> IvoryPure
+fifo_withGet fifo f = fifo_withGetDef fifo (pure ()) f
+
+fifo_withGetDef :: FIFO n a -> IvoryPure -> (Ref 'Global a -> IvoryPure) -> IvoryPure
+fifo_withGetDef FIFO {..} d f = do
+    isEmpty <- fifo_isEmpty
+    ifte_ isEmpty d $ do
+        elem <- fifo_get
+        f elem

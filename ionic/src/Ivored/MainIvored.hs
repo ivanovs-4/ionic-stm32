@@ -116,7 +116,7 @@ makeCModule = (scheduleParams, ) $ package "main" $ do
         let bitChange bitAction grp pin = call_ writeBit grp pin bitAction
 
         let
-            matrix_schedule :: [Ivory NoEffects ()]
+            matrix_schedule :: [IvoryPure]
             matrix_schedule =
                 [ forM_ (fst <$> take 1 imatrix)
                     $ uncurry $ bitChange bit_SET
@@ -351,7 +351,7 @@ lightOn = do
 lightOff = do
     call_ GPIO.writeBit gpioC GPIO.pin_13 GPIO.bit_SET
 
-prepareUSB :: CModule (Ivory NoEffects ())
+prepareUSB :: CModule IvoryPure
 prepareUSB = do
     set_system            <- cdef $ USB.setSystem
     set_sys_clock_to72    <- cdef $ USB.setSysClockTo72
@@ -375,7 +375,7 @@ keybufArraySize = fromIntegral $ numVal (Proxy @KeybufArraySize)
 
 communicateUSB ::
       FIFO KeyEventsFIFOSize ('Struct "KeyEvent")
-   -> CModule (Ivory NoEffects ())
+   -> CModule IvoryPure
 communicateUSB key_events = do
     prev_xfer_complete      <- cdef $ USB.prevXferComplete
     b_device_state          <- cdef $ USB.bDeviceState
@@ -473,7 +473,7 @@ usbSend prev_xfer_complete current_key_buf = do
 interpretateBtnEvents ::
        FIFO n ('Struct "BtnEvent")
     -> FIFO k ('Struct "KeyEvent")
-    -> CModule (Ivory NoEffects ())
+    -> CModule IvoryPure
 interpretateBtnEvents btn_events key_events = do
 
     btn_to_key :: MemArea (Array BtnCount (Stored Uint8)) <- cdef $ area "btn_to_key" $
@@ -486,14 +486,11 @@ interpretateBtnEvents btn_events key_events = do
           ]
 
     pure $ do
-        is_keys_has_place <- iNot <$> fifo_isFull key_events
-        ift_ is_keys_has_place $ do
-            is_btn_new <- iNot <$> fifo_isEmpty btn_events
-            ift_ (is_btn_new) $ do
-                btn_new <- fifo_get btn_events
+        fifo_withHead key_events $ \keyEvHead -> do
+            fifo_withGet btn_events $ \btn_new -> do
                 button <- deref $ btn_new ~> btnEvent_button
                 press  <- deref $ btn_new ~> btnEvent_press
                 keycode <- deref $ addrOf btn_to_key ! toIx button
-                fifo_withHead key_events $ \h -> do
-                    store (h ~> keyEvent_keycode) keycode
-                    store (h ~> keyEvent_press) press
+
+                store (keyEvHead ~> keyEvent_keycode) keycode
+                store (keyEvHead ~> keyEvent_press) press
