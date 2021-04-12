@@ -40,16 +40,19 @@ import Schedule
       }
     |]
 
+type ButtonNum = Uint8
+type KeyCode = Uint8
+
 [ivory|
     struct BtnEvent
-      { btnEvent_button :: Stored Uint8
+      { btnEvent_button :: Stored ButtonNum
       ; btnEvent_press  :: Stored IBool
       }
     |]
 
 [ivory|
     struct KeyEvent
-      { keyEvent_keycode :: Stored Uint8
+      { keyEvent_keycode :: Stored KeyCode
       ; keyEvent_press   :: Stored IBool
       }
     |]
@@ -230,11 +233,11 @@ processRawBtn
     oneTimeMatrixScanPeriodMicroseconds
     btn_events
   = do
-    a_btn_current_state :: MemArea (Array bc ('Stored Uint32)) <- cdef $ area "btn_current_state" $
+    a_btn_current_state :: MemArea (Array bc ('Stored Uint16)) <- cdef $ area "btn_current_state" $
         Just $ iarray $ replicate (numVal (Proxy @bc)) izero
-    a_btn_debounce_release :: MemArea (Array bc ('Stored Uint8)) <- cdef $ area "btn_debounce_release" $
+    a_btn_debounce_release :: MemArea (Array bc ('Stored ButtonNum)) <- cdef $ area "btn_debounce_release" $
         Just $ iarray $ replicate (numVal (Proxy @bc)) izero
-    a_btn_ignore :: MemArea (Array bc ('Stored Uint8)) <- cdef $ area "btn_ignore" $
+    a_btn_ignore :: MemArea (Array bc ('Stored ButtonNum)) <- cdef $ area "btn_ignore" $
         Just $ iarray $ replicate (numVal (Proxy @bc)) izero
 
     cdef $ proc "process_raw_btn" $
@@ -476,7 +479,7 @@ interpretateBtnEvents ::
     -> CModule IvoryPure
 interpretateBtnEvents btn_events key_events = do
 
-    btn_to_key :: MemArea (Array BtnCount (Stored Uint8)) <- cdef $ area "btn_to_key" $
+    btn_to_key :: MemArea (Array BtnCount (Stored KeyCode)) <- cdef $ area "btn_to_key" $
         Just $ iarray $ (ival . fromIntegral) <$>
           -- [ key_A , key_B , key_C , key_D , key_E
           -- , key_F , key_G , key_H , key_I , key_J
